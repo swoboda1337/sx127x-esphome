@@ -21,6 +21,7 @@ Example yaml to use in esphome device config:
     sx127x:
       nss_pin: GPIO18
       rst_pin: GPIO23
+      ook_floor: -90
       frequency: 433920000
       bandwidth: 50_0kHz
       modulation: OOK
@@ -29,6 +30,5 @@ Example yaml to use in esphome device config:
       pin: GPIO32
       filter: 255us
       idle: 2000us
-      ook_floor: -90
       buffer_size: 100000b
       memory_blocks: 8
