@@ -1,6 +1,6 @@
 ESPHome SX127x driver. Tested with the LILYGO LoRa32 V2.1_1.6 board.
 
-SX127x component provides data on a GPIO. 
+SX127x component configures SX1276, SX1277, SX1278 or SX1279 hardware and provides demodulated data on a GPIO for use in ESPHome. 
 
 Example yaml to use in esphome device config:
     
@@ -27,5 +27,6 @@ Example yaml to use in esphome device config:
       pin: GPIO32
       filter: 255us
       idle: 2000us
+      ook_floor: -90
       buffer_size: 100000b
       memory_blocks: 8
