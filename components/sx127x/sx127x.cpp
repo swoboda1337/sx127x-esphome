@@ -5,27 +5,27 @@ namespace sx127x {
 
 static const char *const TAG = "sx127x";
 
-const uint8_t REG_OP_MODE         = 0x01;
-const uint8_t REG_FRF_MSB         = 0x06;
-const uint8_t REG_FRF_MID         = 0x07;
-const uint8_t REG_FRF_LSB         = 0x08;
-const uint8_t REG_RX_BW           = 0x12;
-const uint8_t REG_OOK_PEAK        = 0x14;
-const uint8_t REG_OOK_FIX         = 0x15;
-const uint8_t REG_SYNC_CONFIG     = 0x27;
-const uint8_t REG_PACKET_CONFIG_1 = 0x30;
-const uint8_t REG_PACKET_CONFIG_2 = 0x31;
-const uint8_t REG_IRQ_FLAGS_1     = 0x3e;
-const uint8_t REG_IRQ_FLAGS_2     = 0x3f;
-const uint8_t REG_VERSION         = 0x42;
+static const uint8_t REG_OP_MODE         = 0x01;
+static const uint8_t REG_FRF_MSB         = 0x06;
+static const uint8_t REG_FRF_MID         = 0x07;
+static const uint8_t REG_FRF_LSB         = 0x08;
+static const uint8_t REG_RX_BW           = 0x12;
+static const uint8_t REG_OOK_PEAK        = 0x14;
+static const uint8_t REG_OOK_FIX         = 0x15;
+static const uint8_t REG_SYNC_CONFIG     = 0x27;
+static const uint8_t REG_PACKET_CONFIG_1 = 0x30;
+static const uint8_t REG_PACKET_CONFIG_2 = 0x31;
+static const uint8_t REG_IRQ_FLAGS_1     = 0x3e;
+static const uint8_t REG_IRQ_FLAGS_2     = 0x3f;
+static const uint8_t REG_VERSION         = 0x42;
 
-const uint8_t MODE_LF_ON = 0x08;
-const uint8_t MODE_SLEEP = 0x00;
-const uint8_t MODE_STDBY = 0x01;
-const uint8_t MODE_RX_FS = 0x04;
-const uint8_t MODE_RX    = 0x05;
+static const uint8_t MODE_LF_ON = 0x08;
+static const uint8_t MODE_SLEEP = 0x00;
+static const uint8_t MODE_STDBY = 0x01;
+static const uint8_t MODE_RX_FS = 0x04;
+static const uint8_t MODE_RX    = 0x05;
 
-const uint8_t OOK_TRESHOLD_PEAK = 0x08;
+static const uint8_t OOK_TRESHOLD_PEAK = 0x08;
 
 uint8_t SX127x::read_register_(uint8_t reg) {
   return this->single_transfer_((uint8_t)reg & 0x7f, 0x00);
@@ -94,11 +94,11 @@ void SX127x::setup() {
   this->write_register_(REG_OOK_FIX, int((128 + this->ook_floor_) * 2 + 0.5));
 
   // enable rx mode  
-  this->write_register_(REG_OP_MODE, modulation_ | MODE_LF_ON | MODE_STDBY);
+  this->write_register_(REG_OP_MODE, this->modulation_ | MODE_LF_ON | MODE_STDBY);
   delay(1);
-  this->write_register_(REG_OP_MODE, modulation_ | MODE_LF_ON | MODE_RX_FS);
+  this->write_register_(REG_OP_MODE, this->modulation_ | MODE_LF_ON | MODE_RX_FS);
   delay(1);
-  this->write_register_(REG_OP_MODE, modulation_ | MODE_LF_ON | MODE_RX);
+  this->write_register_(REG_OP_MODE, this->modulation_ | MODE_LF_ON | MODE_RX);
 }
 
 void SX127x::dump_config() {
