@@ -1,6 +1,5 @@
 #pragma once
 
-#include "esphome/core/component.h"
 #include "esphome/components/spi/spi.h"
 
 namespace esphome {
@@ -41,10 +40,9 @@ class SX127x : public Component,
                                      spi::CLOCK_PHASE_LEADING,
                                      spi::DATA_RATE_8MHZ> { 
  public:
+  float get_setup_priority() const override { return setup_priority::HARDWARE; }
   void setup() override;
   void dump_config() override;
-  float get_setup_priority() const override;
-
   void set_rst_pin(InternalGPIOPin *rst_pin) { this->rst_pin_ = rst_pin; }
   void set_nss_pin(InternalGPIOPin *nss_pin) { this->nss_pin_ = nss_pin; }
   void set_ook_floor(float ook_floor) { this->ook_floor_ = ook_floor; }
