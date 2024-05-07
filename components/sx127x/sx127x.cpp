@@ -65,7 +65,7 @@ void SX127x::setup() {
 
   // check silicon version to make sure hw is ok
   if (this->read_register_(REG_VERSION) != 0x12) {
-    mark_failed();
+    this->mark_failed();
     return;
   }
 
