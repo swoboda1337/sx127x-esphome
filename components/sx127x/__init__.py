@@ -55,7 +55,7 @@ CONFIG_SCHEMA = (
             cv.GenerateID(): cv.declare_id(SX127x),
             cv.Required(CONF_RST_PIN): pins.internal_gpio_output_pin_schema,
             cv.Required(CONF_NSS_PIN): pins.internal_gpio_output_pin_schema,
-            cv.Optional(CONF_OOK_FLOOR, default=-122): cv.float_range(min=-128, max=0),
+            cv.Optional(CONF_OOK_FLOOR, default=-94): cv.float_range(min=-128, max=-1),
             cv.Required(CONF_FREQUENCY): cv.int_range(min=137000000, max=1020000000),
             cv.Required(CONF_MODULATION): cv.enum(MODULATION),
             cv.Required(CONF_BANDWIDTH): cv.enum(BANDWIDTH),

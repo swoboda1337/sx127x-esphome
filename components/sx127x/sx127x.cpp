@@ -91,7 +91,7 @@ void SX127x::setup() {
   this->write_register_(REG_OOK_PEAK, OOK_TRESHOLD_PEAK);
 
   // set ook floor
-  this->write_register_(REG_OOK_FIX, int((128 + this->ook_floor_) * 2 + 0.5));
+  this->write_register_(REG_OOK_FIX, 256 + int(this->ook_floor_ * 2.0));
 
   // enable rx mode  
   this->write_register_(REG_OP_MODE, this->modulation_ | MODE_LF_ON | MODE_STDBY);
