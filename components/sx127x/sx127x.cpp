@@ -15,8 +15,6 @@ static const uint8_t REG_OOK_FIX         = 0x15;
 static const uint8_t REG_SYNC_CONFIG     = 0x27;
 static const uint8_t REG_PACKET_CONFIG_1 = 0x30;
 static const uint8_t REG_PACKET_CONFIG_2 = 0x31;
-static const uint8_t REG_IRQ_FLAGS_1     = 0x3e;
-static const uint8_t REG_IRQ_FLAGS_2     = 0x3f;
 static const uint8_t REG_VERSION         = 0x42;
 
 static const uint8_t MODE_LF_ON = 0x08;
