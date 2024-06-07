@@ -17,36 +17,36 @@ CONF_BANDWIDTH = "bandwidth"
 
 sx127x_ns = cg.esphome_ns.namespace("sx127x")
 SX127x = sx127x_ns.class_("SX127x", cg.Component, spi.SPIDevice)
-Modulation = sx127x_ns.enum("SX127xMod")
-Bandwidth = sx127x_ns.enum("SX127xRxBw")
+SX127xMod = sx127x_ns.enum("SX127xMod")
+SX127xRxBw = sx127x_ns.enum("SX127xRxBw")
 
 MODULATION = {
-    "FSK": Modulation.MODULATION_FSK,
-    "OOK": Modulation.MODULATION_OOK,
+    "FSK": SX127xMod.MODULATION_FSK,
+    "OOK": SX127xMod.MODULATION_OOK,
 }
 
 BANDWIDTH = {
-    "2_6kHz": Bandwidth.RX_BANDWIDTH_2_6,
-    "3_1kHz": Bandwidth.RX_BANDWIDTH_3_1,
-    "3_9kHz": Bandwidth.RX_BANDWIDTH_3_9,
-    "5_2kHz": Bandwidth.RX_BANDWIDTH_5_2,
-    "6_3kHz": Bandwidth.RX_BANDWIDTH_6_3,
-    "7_8kHz": Bandwidth.RX_BANDWIDTH_7_8,
-    "10_4kHz": Bandwidth.RX_BANDWIDTH_10_4,
-    "12_5kHz": Bandwidth.RX_BANDWIDTH_12_5,
-    "15_6kHz": Bandwidth.RX_BANDWIDTH_15_6,
-    "20_8kHz": Bandwidth.RX_BANDWIDTH_20_8,
-    "25_0kHz": Bandwidth.RX_BANDWIDTH_25_0,
-    "31_3kHz": Bandwidth.RX_BANDWIDTH_31_3,
-    "41_7kHz": Bandwidth.RX_BANDWIDTH_41_7,
-    "50_0kHz": Bandwidth.RX_BANDWIDTH_50_0,
-    "62_5kHz": Bandwidth.RX_BANDWIDTH_62_5,
-    "83_3kHz": Bandwidth.RX_BANDWIDTH_83_3,
-    "100_0kHz": Bandwidth.RX_BANDWIDTH_100_0,
-    "125_0kHz": Bandwidth.RX_BANDWIDTH_125_0,
-    "166_7kHz": Bandwidth.RX_BANDWIDTH_166_7,
-    "200_0kHz": Bandwidth.RX_BANDWIDTH_200_0,
-    "250_0kHz": Bandwidth.RX_BANDWIDTH_250_0
+    "2_6kHz": SX127xRxBw.RX_BANDWIDTH_2_6,
+    "3_1kHz": SX127xRxBw.RX_BANDWIDTH_3_1,
+    "3_9kHz": SX127xRxBw.RX_BANDWIDTH_3_9,
+    "5_2kHz": SX127xRxBw.RX_BANDWIDTH_5_2,
+    "6_3kHz": SX127xRxBw.RX_BANDWIDTH_6_3,
+    "7_8kHz": SX127xRxBw.RX_BANDWIDTH_7_8,
+    "10_4kHz": SX127xRxBw.RX_BANDWIDTH_10_4,
+    "12_5kHz": SX127xRxBw.RX_BANDWIDTH_12_5,
+    "15_6kHz": SX127xRxBw.RX_BANDWIDTH_15_6,
+    "20_8kHz": SX127xRxBw.RX_BANDWIDTH_20_8,
+    "25_0kHz": SX127xRxBw.RX_BANDWIDTH_25_0,
+    "31_3kHz": SX127xRxBw.RX_BANDWIDTH_31_3,
+    "41_7kHz": SX127xRxBw.RX_BANDWIDTH_41_7,
+    "50_0kHz": SX127xRxBw.RX_BANDWIDTH_50_0,
+    "62_5kHz": SX127xRxBw.RX_BANDWIDTH_62_5,
+    "83_3kHz": SX127xRxBw.RX_BANDWIDTH_83_3,
+    "100_0kHz": SX127xRxBw.RX_BANDWIDTH_100_0,
+    "125_0kHz": SX127xRxBw.RX_BANDWIDTH_125_0,
+    "166_7kHz": SX127xRxBw.RX_BANDWIDTH_166_7,
+    "200_0kHz": SX127xRxBw.RX_BANDWIDTH_200_0,
+    "250_0kHz": SX127xRxBw.RX_BANDWIDTH_250_0
 }
 
 CONFIG_SCHEMA = (
