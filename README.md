@@ -32,6 +32,7 @@ Receiver example to use in ESPHome, timing data is read by remote receiver from 
       idle: 2000us
       buffer_size: 100000b
       memory_blocks: 8
+      dump: raw
 
 Transmitter example to use in ESPHome, timing data is sent on GPIO32 by remote transmitter (ESPHome needs an API change so the transmitter start/stop is handled automatically):
 
