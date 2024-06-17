@@ -9,6 +9,7 @@ static const uint8_t REG_OP_MODE         = 0x01;
 static const uint8_t REG_FRF_MSB         = 0x06;
 static const uint8_t REG_FRF_MID         = 0x07;
 static const uint8_t REG_FRF_LSB         = 0x08;
+static const uint8_t REG_PA_CONFIG       = 0x09;
 static const uint8_t REG_RX_BW           = 0x12;
 static const uint8_t REG_OOK_PEAK        = 0x14;
 static const uint8_t REG_OOK_FIX         = 0x15;
@@ -20,6 +21,8 @@ static const uint8_t REG_VERSION         = 0x42;
 static const uint8_t MODE_LF_ON = 0x08;
 static const uint8_t MODE_SLEEP = 0x00;
 static const uint8_t MODE_STDBY = 0x01;
+static const uint8_t MODE_TX_FS = 0x02;
+static const uint8_t MODE_TX    = 0x03;
 static const uint8_t MODE_RX_FS = 0x04;
 static const uint8_t MODE_RX    = 0x05;
 
@@ -78,7 +81,16 @@ void SX127x::setup() {
   this->write_register_(REG_FRF_LSB, (uint8_t)((frf >> 0) & 0xFF));
   
   // set the channel bw
-  this->write_register_(REG_RX_BW, this->bandwidth_);
+  this->write_register_(REG_RX_BW, this->rx_bandwidth_);
+
+  // config pa
+  if (this->pa_pin_ == PA_BOOST) {
+    this->pa_power_ = std::min(std::max(this->pa_power_, 2u), 17u);
+    this->write_register_(REG_PA_CONFIG, (this->pa_power_ - 2) | this->pa_pin_ | 0x70);
+  } else {
+    this->pa_power_ = std::min(std::max(this->pa_power_, 0u), 14u);
+    this->write_register_(REG_PA_CONFIG, (this->pa_power_ - 0) | this->pa_pin_ | 0x70);
+  }
 
   // disable packet mode
   this->write_register_(REG_PACKET_CONFIG_1, 0x00);
@@ -89,27 +101,50 @@ void SX127x::setup() {
   this->write_register_(REG_OOK_PEAK, OOK_TRESHOLD_PEAK);
 
   // set ook floor
-  this->write_register_(REG_OOK_FIX, 256 + int(this->ook_floor_ * 2.0));
+  this->write_register_(REG_OOK_FIX, 256 + int(this->rx_floor_ * 2.0));
 
-  // enable rx mode  
+  // enable standby mode
+  this->set_mode_standby();
+  
+  // enable rx mode
+  if (this->rx_start_) {
+    this->set_mode_rx();
+  }
+}
+
+void SX127x::set_mode_standby() {
   this->write_register_(REG_OP_MODE, this->modulation_ | MODE_LF_ON | MODE_STDBY);
   delay(1);
+}
+
+void SX127x::set_mode_rx() {
   this->write_register_(REG_OP_MODE, this->modulation_ | MODE_LF_ON | MODE_RX_FS);
   delay(1);
   this->write_register_(REG_OP_MODE, this->modulation_ | MODE_LF_ON | MODE_RX);
 }
 
+void SX127x::set_mode_tx() {
+  this->write_register_(REG_OP_MODE, this->modulation_ | MODE_LF_ON | MODE_TX_FS);
+  delay(1);
+  this->write_register_(REG_OP_MODE, this->modulation_ | MODE_LF_ON | MODE_TX);
+}
+
 void SX127x::dump_config() {
-  uint32_t rx_bw_mant = 16 + (this->bandwidth_ >> 3) * 4;
-  uint32_t rx_bw_exp = this->bandwidth_ & 0x7;
+  uint32_t rx_bw_mant = 16 + (this->rx_bandwidth_ >> 3) * 4;
+  uint32_t rx_bw_exp = this->rx_bandwidth_ & 0x7;
   float rx_bw = (float)32000000 / (rx_bw_mant * (1 << (rx_bw_exp + 2)));
   ESP_LOGCONFIG(TAG, "SX127x:");
+  LOG_PIN("  NSS Pin: ", this->nss_pin_);
+  LOG_PIN("  RST Pin: ", this->rst_pin_);
   ESP_LOGCONFIG(TAG, "  Frequency: %f MHz", (float)this->frequency_ / 1000000);
-  ESP_LOGCONFIG(TAG, "  Bandwidth: %.1f kHz", (float)rx_bw / 1000);
   ESP_LOGCONFIG(TAG, "  Modulation: %s", this->modulation_ == MODULATION_FSK ? "FSK" : "OOK");
+  ESP_LOGCONFIG(TAG, "  Rx Bandwidth: %.1f kHz", (float)rx_bw / 1000);
+  ESP_LOGCONFIG(TAG, "  Rx Start: %s", this->rx_start_ ? "true" : "false");
   if (this->modulation_ == MODULATION_OOK) {
-    ESP_LOGCONFIG(TAG, "  Floor: %.1f dBm", this->ook_floor_);
+    ESP_LOGCONFIG(TAG, "  Rx Floor: %.1f dBm", this->rx_floor_);
   }
+  ESP_LOGCONFIG(TAG, "  PA Pin: %s", this->pa_pin_ == PA_BOOST ? "PA_BOOST" : "RFO");
+  ESP_LOGCONFIG(TAG, "  PA Power: %d dBm", this->pa_power_);
   if (this->is_failed()) {
     ESP_LOGE(TAG, "Configuring SX127x failed");
   }

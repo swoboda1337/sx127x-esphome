@@ -8,24 +8,33 @@ CODEOWNERS = ["@swoboda1337"]
 
 DEPENDENCIES = ["spi"]
 
+CONF_PA_POWER = 'pa_power'
+CONF_PA_PIN = 'pa_pin'
 CONF_NSS_PIN = 'nss_pin'
 CONF_RST_PIN = 'rst_pin'
-CONF_OOK_FLOOR = "ook_floor"
 CONF_FREQUENCY = "frequency"
 CONF_MODULATION = "modulation"
-CONF_BANDWIDTH = "bandwidth"
+CONF_RX_FLOOR = "rx_floor"
+CONF_RX_START = "rx_start"
+CONF_RX_BANDWIDTH = "rx_bandwidth"
 
 sx127x_ns = cg.esphome_ns.namespace("sx127x")
 SX127x = sx127x_ns.class_("SX127x", cg.Component, spi.SPIDevice)
 SX127xMod = sx127x_ns.enum("SX127xMod")
 SX127xRxBw = sx127x_ns.enum("SX127xRxBw")
+SX127xPaPin = sx127x_ns.enum("SX127xPaPin")
 
-MODULATION = {
+PA_PIN = {
+    "RFO": SX127xPaPin.RFO,
+    "PA_BOOST": SX127xPaPin.PA_BOOST,
+}
+
+MOD = {
     "FSK": SX127xMod.MODULATION_FSK,
     "OOK": SX127xMod.MODULATION_OOK,
 }
 
-BANDWIDTH = {
+RX_BW = {
     "2_6kHz": SX127xRxBw.RX_BANDWIDTH_2_6,
     "3_1kHz": SX127xRxBw.RX_BANDWIDTH_3_1,
     "3_9kHz": SX127xRxBw.RX_BANDWIDTH_3_9,
@@ -55,10 +64,13 @@ CONFIG_SCHEMA = (
             cv.GenerateID(): cv.declare_id(SX127x),
             cv.Required(CONF_RST_PIN): pins.internal_gpio_output_pin_schema,
             cv.Required(CONF_NSS_PIN): pins.internal_gpio_output_pin_schema,
-            cv.Optional(CONF_OOK_FLOOR, default=-94): cv.float_range(min=-128, max=-1),
             cv.Required(CONF_FREQUENCY): cv.int_range(min=137000000, max=1020000000),
-            cv.Required(CONF_MODULATION): cv.enum(MODULATION),
-            cv.Required(CONF_BANDWIDTH): cv.enum(BANDWIDTH),
+            cv.Required(CONF_MODULATION): cv.enum(MOD),
+            cv.Optional(CONF_RX_FLOOR, default=-94): cv.float_range(min=-128, max=-1),
+            cv.Optional(CONF_RX_START, default=True): cv.boolean,
+            cv.Optional(CONF_RX_BANDWIDTH, default="50_0kHz"): cv.enum(RX_BW),
+            cv.Optional(CONF_PA_PIN, default="PA_BOOST"): cv.enum(PA_PIN),
+            cv.Optional(CONF_PA_POWER, default=17): cv.int_range(min=0, max=17),
         }
     ).extend(spi.spi_device_schema(False, 8e6, 'mode0'))
 )
@@ -71,7 +83,10 @@ async def to_code(config):
     cg.add(var.set_rst_pin(rst_pin))
     nss_pin = await cg.gpio_pin_expression(config[CONF_NSS_PIN])
     cg.add(var.set_nss_pin(nss_pin))
-    cg.add(var.set_ook_floor(config.get(CONF_OOK_FLOOR)))
     cg.add(var.set_frequency(config[CONF_FREQUENCY]))
-    cg.add(var.set_rx_modulation(config[CONF_MODULATION]))
-    cg.add(var.set_rx_bandwidth(config[CONF_BANDWIDTH]))
+    cg.add(var.set_modulation(config[CONF_MODULATION]))
+    cg.add(var.set_rx_floor(config[CONF_RX_FLOOR]))
+    cg.add(var.set_rx_start(config[CONF_RX_START]))
+    cg.add(var.set_rx_bandwidth(config[CONF_RX_BANDWIDTH]))
+    cg.add(var.set_pa_pin(config[CONF_PA_PIN]))
+    cg.add(var.set_pa_power(config[CONF_PA_POWER]))

@@ -34,6 +34,11 @@ enum SX127xMod : uint8_t {
   MODULATION_OOK = 0x20
 };
 
+enum SX127xPaPin : uint8_t {
+  RFO = 0x00,
+  PA_BOOST = 0x80
+};
+
 class SX127x : public Component,
                public spi::SPIDevice<spi::BIT_ORDER_MSB_FIRST, 
                                      spi::CLOCK_POLARITY_LOW, 
@@ -45,10 +50,16 @@ class SX127x : public Component,
   void dump_config() override;
   void set_rst_pin(InternalGPIOPin *rst_pin) { this->rst_pin_ = rst_pin; }
   void set_nss_pin(InternalGPIOPin *nss_pin) { this->nss_pin_ = nss_pin; }
-  void set_ook_floor(float ook_floor) { this->ook_floor_ = ook_floor; }
   void set_frequency(uint32_t frequency) { this->frequency_ = frequency; }
-  void set_rx_modulation(SX127xMod modulation) { this->modulation_ = modulation; }
-  void set_rx_bandwidth(SX127xRxBw bandwidth) { this->bandwidth_ = bandwidth; }
+  void set_modulation(SX127xMod modulation) { this->modulation_ = modulation; }
+  void set_rx_start(bool start) { this->rx_start_ = start; }
+  void set_rx_floor(float floor) { this->rx_floor_ = floor; }
+  void set_rx_bandwidth(SX127xRxBw bandwidth) { this->rx_bandwidth_ = bandwidth; }
+  void set_pa_pin(SX127xPaPin pin) { this->pa_pin_ = pin; }
+  void set_pa_power(uint32_t power) { this->pa_power_ = power; }
+  void set_mode_standby();
+  void set_mode_tx();
+  void set_mode_rx();
 
  protected:
   void write_register_(uint8_t address, uint8_t value);
@@ -56,10 +67,13 @@ class SX127x : public Component,
   uint8_t read_register_(uint8_t address);
   InternalGPIOPin *rst_pin_{nullptr};
   InternalGPIOPin *nss_pin_{nullptr};
-  float ook_floor_;
-  SX127xRxBw bandwidth_; 
+  SX127xPaPin pa_pin_;
+  SX127xRxBw rx_bandwidth_; 
   SX127xMod modulation_;
   uint32_t frequency_;
+  uint32_t pa_power_;
+  float rx_floor_;
+  bool rx_start_;
 };
 
 }  // namespace sx127x
