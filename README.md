@@ -4,6 +4,8 @@ SX127x component configures SX1276, SX1277, SX1278 or SX1279 hardware for use in
 
 Tested with the LILYGO LoRa32 V2.1_1.6 board.
 
+Note the small 433 MHz antennas that come with these boards work fine but are not ideal. The antenna gain is really poor and it’s too close to the Wi-Fi antenna which can cause glitches. A proper antenna like the Siretta Tango 9 has better range and doesn’t glitch when Wi-Fi transmits.
+
 Receiver example to use in ESPHome, timing data is read by remote receiver from GPIO32:
     
     external_components:
