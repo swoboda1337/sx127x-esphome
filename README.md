@@ -56,7 +56,7 @@ Transmitter example to use in ESPHome, timing data is sent on GPIO32 by remote t
       rst_pin: GPIO23
       frequency: 433920000
       modulation: OOK
-      pa_pin: PA_BOOST
+      pa_pin: BOOST
       pa_power: 17
       rx_start: false
 
