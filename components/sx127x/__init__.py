@@ -2,7 +2,7 @@ from esphome import pins
 import esphome.codegen as cg
 from esphome.components import spi
 import esphome.config_validation as cv
-from esphome.const import CONF_ID
+from esphome.const import CONF_ID, CONF_FREQUENCY
 
 CODEOWNERS = ["@swoboda1337"]
 DEPENDENCIES = ["spi"]
@@ -11,7 +11,6 @@ CONF_PA_POWER = "pa_power"
 CONF_PA_PIN = "pa_pin"
 CONF_NSS_PIN = "nss_pin"
 CONF_RST_PIN = "rst_pin"
-CONF_FREQUENCY = "frequency"
 CONF_MODULATION = "modulation"
 CONF_RX_FLOOR = "rx_floor"
 CONF_RX_START = "rx_start"
