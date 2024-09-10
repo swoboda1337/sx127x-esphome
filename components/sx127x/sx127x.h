@@ -38,14 +38,14 @@ enum SX127xOokPeak : uint8_t {
   OOK_THRESH_AVG = 0x10,
   OOK_THRESH_PEAK = 0x08,
   OOK_THRESH_FIXED = 0x00,
-  OOK_STEP_0_5 = 0x00,
-  OOK_STEP_1_0 = 0x01,
-  OOK_STEP_1_5 = 0x02,
-  OOK_STEP_2_0 = 0x03,
-  OOK_STEP_3_0 = 0x04,
-  OOK_STEP_4_0 = 0x05,
+  OOK_STEP_6_0 = 0x07,
   OOK_STEP_5_0 = 0x06,
-  OOK_STEP_6_0 = 0x07
+  OOK_STEP_4_0 = 0x05,
+  OOK_STEP_3_0 = 0x04,
+  OOK_STEP_2_0 = 0x03,
+  OOK_STEP_1_5 = 0x02,
+  OOK_STEP_1_0 = 0x01,
+  OOK_STEP_0_5 = 0x00
 };
 
 enum SX127xRxBw : uint8_t {
