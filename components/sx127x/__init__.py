@@ -5,7 +5,6 @@ from esphome.components import spi
 from esphome.const import CONF_ID
 
 CODEOWNERS = ["@swoboda1337"]
-
 DEPENDENCIES = ["spi"]
 
 CONF_PA_POWER = 'pa_power'
@@ -20,42 +19,42 @@ CONF_RX_BANDWIDTH = "rx_bandwidth"
 
 sx127x_ns = cg.esphome_ns.namespace("sx127x")
 SX127x = sx127x_ns.class_("SX127x", cg.Component, spi.SPIDevice)
-SX127xMod = sx127x_ns.enum("SX127xMod")
+SX127xOpMode = sx127x_ns.enum("SX127xOpMode")
 SX127xRxBw = sx127x_ns.enum("SX127xRxBw")
-SX127xPaPin = sx127x_ns.enum("SX127xPaPin")
+SX127xPaConfig = sx127x_ns.enum("SX127xPaConfig")
 
 PA_PIN = {
-    "RFO": SX127xPaPin.RFO,
-    "PA_BOOST": SX127xPaPin.PA_BOOST,
+    "RFO": SX127xPaConfig.PA_PIN_RFO,
+    "BOOST": SX127xPaConfig.PA_PIN_BOOST,
 }
 
 MOD = {
-    "FSK": SX127xMod.MODULATION_FSK,
-    "OOK": SX127xMod.MODULATION_OOK,
+    "FSK": SX127xOpMode.MOD_FSK,
+    "OOK": SX127xOpMode.MOD_OOK,
 }
 
 RX_BW = {
-    "2_6kHz": SX127xRxBw.RX_BANDWIDTH_2_6,
-    "3_1kHz": SX127xRxBw.RX_BANDWIDTH_3_1,
-    "3_9kHz": SX127xRxBw.RX_BANDWIDTH_3_9,
-    "5_2kHz": SX127xRxBw.RX_BANDWIDTH_5_2,
-    "6_3kHz": SX127xRxBw.RX_BANDWIDTH_6_3,
-    "7_8kHz": SX127xRxBw.RX_BANDWIDTH_7_8,
-    "10_4kHz": SX127xRxBw.RX_BANDWIDTH_10_4,
-    "12_5kHz": SX127xRxBw.RX_BANDWIDTH_12_5,
-    "15_6kHz": SX127xRxBw.RX_BANDWIDTH_15_6,
-    "20_8kHz": SX127xRxBw.RX_BANDWIDTH_20_8,
-    "25_0kHz": SX127xRxBw.RX_BANDWIDTH_25_0,
-    "31_3kHz": SX127xRxBw.RX_BANDWIDTH_31_3,
-    "41_7kHz": SX127xRxBw.RX_BANDWIDTH_41_7,
-    "50_0kHz": SX127xRxBw.RX_BANDWIDTH_50_0,
-    "62_5kHz": SX127xRxBw.RX_BANDWIDTH_62_5,
-    "83_3kHz": SX127xRxBw.RX_BANDWIDTH_83_3,
-    "100_0kHz": SX127xRxBw.RX_BANDWIDTH_100_0,
-    "125_0kHz": SX127xRxBw.RX_BANDWIDTH_125_0,
-    "166_7kHz": SX127xRxBw.RX_BANDWIDTH_166_7,
-    "200_0kHz": SX127xRxBw.RX_BANDWIDTH_200_0,
-    "250_0kHz": SX127xRxBw.RX_BANDWIDTH_250_0
+    "2_6kHz": SX127xRxBw.RX_BW_2_6,
+    "3_1kHz": SX127xRxBw.RX_BW_3_1,
+    "3_9kHz": SX127xRxBw.RX_BW_3_9,
+    "5_2kHz": SX127xRxBw.RX_BW_5_2,
+    "6_3kHz": SX127xRxBw.RX_BW_6_3,
+    "7_8kHz": SX127xRxBw.RX_BW_7_8,
+    "10_4kHz": SX127xRxBw.RX_BW_10_4,
+    "12_5kHz": SX127xRxBw.RX_BW_12_5,
+    "15_6kHz": SX127xRxBw.RX_BW_15_6,
+    "20_8kHz": SX127xRxBw.RX_BW_20_8,
+    "25_0kHz": SX127xRxBw.RX_BW_25_0,
+    "31_3kHz": SX127xRxBw.RX_BW_31_3,
+    "41_7kHz": SX127xRxBw.RX_BW_41_7,
+    "50_0kHz": SX127xRxBw.RX_BW_50_0,
+    "62_5kHz": SX127xRxBw.RX_BW_62_5,
+    "83_3kHz": SX127xRxBw.RX_BW_83_3,
+    "100_0kHz": SX127xRxBw.RX_BW_100_0,
+    "125_0kHz": SX127xRxBw.RX_BW_125_0,
+    "166_7kHz": SX127xRxBw.RX_BW_166_7,
+    "200_0kHz": SX127xRxBw.RX_BW_200_0,
+    "250_0kHz": SX127xRxBw.RX_BW_250_0
 }
 
 CONFIG_SCHEMA = (
@@ -69,7 +68,7 @@ CONFIG_SCHEMA = (
             cv.Optional(CONF_RX_FLOOR, default=-94): cv.float_range(min=-128, max=-1),
             cv.Optional(CONF_RX_START, default=True): cv.boolean,
             cv.Optional(CONF_RX_BANDWIDTH, default="50_0kHz"): cv.enum(RX_BW),
-            cv.Optional(CONF_PA_PIN, default="PA_BOOST"): cv.enum(PA_PIN),
+            cv.Optional(CONF_PA_PIN, default="BOOST"): cv.enum(PA_PIN),
             cv.Optional(CONF_PA_POWER, default=17): cv.int_range(min=0, max=17),
         }
     ).extend(spi.spi_device_schema(False, 8e6, 'mode0'))

@@ -5,38 +5,76 @@
 namespace esphome {
 namespace sx127x {
 
+enum SX127xReg : uint8_t {
+  REG_OP_MODE = 0x01,
+  REG_FRF_MSB = 0x06,
+  REG_FRF_MID = 0x07,
+  REG_FRF_LSB = 0x08,
+  REG_PA_CONFIG = 0x09,
+  REG_RX_BW = 0x12,
+  REG_OOK_PEAK = 0x14,
+  REG_OOK_FIX = 0x15,
+  REG_SYNC_CONFIG = 0x27,
+  REG_PACKET_CONFIG_1 = 0x30,
+  REG_PACKET_CONFIG_2 = 0x31,
+  REG_VERSION = 0x42
+};
+
+enum SX127xOpMode : uint8_t {
+  MOD_FSK = 0x00,
+  MOD_OOK = 0x20,
+  MODE_LF_ON = 0x08,
+  MODE_RX = 0x05,
+  MODE_RX_FS = 0x04,
+  MODE_TX = 0x03,
+  MODE_TX_FS = 0x02,
+  MODE_STDBY = 0x01,
+  MODE_SLEEP = 0x00
+};
+
+enum SX127xOokPeak : uint8_t {
+  BIT_SYNC_ON = 0x20,
+  BIT_SYNC_OFF = 0x00,
+  OOK_THRESH_AVG = 0x10,
+  OOK_THRESH_PEAK = 0x08,
+  OOK_THRESH_FIXED = 0x00,
+  OOK_STEP_0_5 = 0x00,
+  OOK_STEP_1_0 = 0x01,
+  OOK_STEP_1_5 = 0x02,
+  OOK_STEP_2_0 = 0x03,
+  OOK_STEP_3_0 = 0x04,
+  OOK_STEP_4_0 = 0x05,
+  OOK_STEP_5_0 = 0x06,
+  OOK_STEP_6_0 = 0x07,
+};
+
 enum SX127xRxBw : uint8_t {
-  RX_BANDWIDTH_2_6 = 0x17,
-  RX_BANDWIDTH_3_1 = 0x0F,
-  RX_BANDWIDTH_3_9 = 0x07,
-  RX_BANDWIDTH_5_2 = 0x16,
-  RX_BANDWIDTH_6_3 = 0x0E,
-  RX_BANDWIDTH_7_8 = 0x06,
-  RX_BANDWIDTH_10_4 = 0x15,
-  RX_BANDWIDTH_12_5 = 0x0D,
-  RX_BANDWIDTH_15_6 = 0x05,
-  RX_BANDWIDTH_20_8 = 0x14,
-  RX_BANDWIDTH_25_0 = 0x0C,
-  RX_BANDWIDTH_31_3 = 0x04,
-  RX_BANDWIDTH_41_7 = 0x13,
-  RX_BANDWIDTH_50_0 = 0x0B,
-  RX_BANDWIDTH_62_5 = 0x03,
-  RX_BANDWIDTH_83_3 = 0x12,
-  RX_BANDWIDTH_100_0 = 0x0A,
-  RX_BANDWIDTH_125_0 = 0x02,
-  RX_BANDWIDTH_166_7 = 0x11,
-  RX_BANDWIDTH_200_0 = 0x09,
-  RX_BANDWIDTH_250_0 = 0x01
+  RX_BW_2_6 = 0x17,
+  RX_BW_3_1 = 0x0F,
+  RX_BW_3_9 = 0x07,
+  RX_BW_5_2 = 0x16,
+  RX_BW_6_3 = 0x0E,
+  RX_BW_7_8 = 0x06,
+  RX_BW_10_4 = 0x15,
+  RX_BW_12_5 = 0x0D,
+  RX_BW_15_6 = 0x05,
+  RX_BW_20_8 = 0x14,
+  RX_BW_25_0 = 0x0C,
+  RX_BW_31_3 = 0x04,
+  RX_BW_41_7 = 0x13,
+  RX_BW_50_0 = 0x0B,
+  RX_BW_62_5 = 0x03,
+  RX_BW_83_3 = 0x12,
+  RX_BW_100_0 = 0x0A,
+  RX_BW_125_0 = 0x02,
+  RX_BW_166_7 = 0x11,
+  RX_BW_200_0 = 0x09,
+  RX_BW_250_0 = 0x01
 };
 
-enum SX127xMod : uint8_t {
-  MODULATION_FSK = 0x00,
-  MODULATION_OOK = 0x20
-};
-
-enum SX127xPaPin : uint8_t {
-  RFO = 0x00,
-  PA_BOOST = 0x80
+enum SX127xPaConfig : uint8_t {
+  PA_PIN_RFO = 0x00,
+  PA_PIN_BOOST = 0x80
 };
 
 class SX127x : public Component,
@@ -51,11 +89,11 @@ class SX127x : public Component,
   void set_rst_pin(InternalGPIOPin *rst_pin) { this->rst_pin_ = rst_pin; }
   void set_nss_pin(InternalGPIOPin *nss_pin) { this->nss_pin_ = nss_pin; }
   void set_frequency(uint32_t frequency) { this->frequency_ = frequency; }
-  void set_modulation(SX127xMod modulation) { this->modulation_ = modulation; }
+  void set_modulation(SX127xOpMode modulation) { this->modulation_ = modulation; }
   void set_rx_start(bool start) { this->rx_start_ = start; }
   void set_rx_floor(float floor) { this->rx_floor_ = floor; }
   void set_rx_bandwidth(SX127xRxBw bandwidth) { this->rx_bandwidth_ = bandwidth; }
-  void set_pa_pin(SX127xPaPin pin) { this->pa_pin_ = pin; }
+  void set_pa_pin(SX127xPaConfig pin) { this->pa_pin_ = pin; }
   void set_pa_power(uint32_t power) { this->pa_power_ = power; }
   void set_mode_standby();
   void set_mode_tx();
@@ -67,9 +105,9 @@ class SX127x : public Component,
   uint8_t read_register_(uint8_t address);
   InternalGPIOPin *rst_pin_{nullptr};
   InternalGPIOPin *nss_pin_{nullptr};
-  SX127xPaPin pa_pin_;
+  SX127xPaConfig pa_pin_;
   SX127xRxBw rx_bandwidth_; 
-  SX127xMod modulation_;
+  SX127xOpMode modulation_;
   uint32_t frequency_;
   uint32_t pa_power_;
   float rx_floor_;

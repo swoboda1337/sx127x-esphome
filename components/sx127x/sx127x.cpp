@@ -5,29 +5,6 @@ namespace sx127x {
 
 static const char *const TAG = "sx127x";
 
-static const uint8_t REG_OP_MODE         = 0x01;
-static const uint8_t REG_FRF_MSB         = 0x06;
-static const uint8_t REG_FRF_MID         = 0x07;
-static const uint8_t REG_FRF_LSB         = 0x08;
-static const uint8_t REG_PA_CONFIG       = 0x09;
-static const uint8_t REG_RX_BW           = 0x12;
-static const uint8_t REG_OOK_PEAK        = 0x14;
-static const uint8_t REG_OOK_FIX         = 0x15;
-static const uint8_t REG_SYNC_CONFIG     = 0x27;
-static const uint8_t REG_PACKET_CONFIG_1 = 0x30;
-static const uint8_t REG_PACKET_CONFIG_2 = 0x31;
-static const uint8_t REG_VERSION         = 0x42;
-
-static const uint8_t MODE_LF_ON = 0x08;
-static const uint8_t MODE_SLEEP = 0x00;
-static const uint8_t MODE_STDBY = 0x01;
-static const uint8_t MODE_TX_FS = 0x02;
-static const uint8_t MODE_TX    = 0x03;
-static const uint8_t MODE_RX_FS = 0x04;
-static const uint8_t MODE_RX    = 0x05;
-
-static const uint8_t OOK_TRESHOLD_PEAK = 0x08;
-
 uint8_t SX127x::read_register_(uint8_t reg) {
   return this->single_transfer_((uint8_t)reg & 0x7f, 0x00);
 }
@@ -84,7 +61,7 @@ void SX127x::setup() {
   this->write_register_(REG_RX_BW, this->rx_bandwidth_);
 
   // config pa
-  if (this->pa_pin_ == PA_BOOST) {
+  if (this->pa_pin_ == PA_PIN_BOOST) {
     this->pa_power_ = std::min(std::max(this->pa_power_, 2u), 17u);
     this->write_register_(REG_PA_CONFIG, (this->pa_power_ - 2) | this->pa_pin_ | 0x70);
   } else {
@@ -98,7 +75,7 @@ void SX127x::setup() {
 
   // disable bit synchronizer and sync generation
   this->write_register_(REG_SYNC_CONFIG, 0x00);
-  this->write_register_(REG_OOK_PEAK, OOK_TRESHOLD_PEAK);
+  this->write_register_(REG_OOK_PEAK, OOK_THRESH_PEAK);
 
   // set ook floor
   this->write_register_(REG_OOK_FIX, 256 + int(this->rx_floor_ * 2.0));
@@ -137,13 +114,13 @@ void SX127x::dump_config() {
   LOG_PIN("  NSS Pin: ", this->nss_pin_);
   LOG_PIN("  RST Pin: ", this->rst_pin_);
   ESP_LOGCONFIG(TAG, "  Frequency: %f MHz", (float)this->frequency_ / 1000000);
-  ESP_LOGCONFIG(TAG, "  Modulation: %s", this->modulation_ == MODULATION_FSK ? "FSK" : "OOK");
+  ESP_LOGCONFIG(TAG, "  Modulation: %s", this->modulation_ == MOD_FSK ? "FSK" : "OOK");
   ESP_LOGCONFIG(TAG, "  Rx Bandwidth: %.1f kHz", (float)rx_bw / 1000);
   ESP_LOGCONFIG(TAG, "  Rx Start: %s", this->rx_start_ ? "true" : "false");
-  if (this->modulation_ == MODULATION_OOK) {
+  if (this->modulation_ == MOD_OOK) {
     ESP_LOGCONFIG(TAG, "  Rx Floor: %.1f dBm", this->rx_floor_);
   }
-  ESP_LOGCONFIG(TAG, "  PA Pin: %s", this->pa_pin_ == PA_BOOST ? "PA_BOOST" : "RFO");
+  ESP_LOGCONFIG(TAG, "  PA Pin: %s", this->pa_pin_ == PA_PIN_BOOST ? "BOOST" : "RFO");
   ESP_LOGCONFIG(TAG, "  PA Power: %d dBm", this->pa_power_);
   if (this->is_failed()) {
     ESP_LOGE(TAG, "Configuring SX127x failed");
