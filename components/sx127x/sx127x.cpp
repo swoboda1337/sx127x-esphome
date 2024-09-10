@@ -66,10 +66,10 @@ void SX127x::configure() {
   // config pa
   if (this->pa_pin_ == PA_PIN_BOOST) {
     this->pa_power_ = std::min(std::max(this->pa_power_, 2u), 17u);
-    this->write_register_(REG_PA_CONFIG, (this->pa_power_ - 2) | this->pa_pin_ | 0x70);
+    this->write_register_(REG_PA_CONFIG, (this->pa_power_ - 2) | this->pa_pin_ | PA_MAX_POWER);
   } else {
     this->pa_power_ = std::min(std::max(this->pa_power_, 0u), 14u);
-    this->write_register_(REG_PA_CONFIG, (this->pa_power_ - 0) | this->pa_pin_ | 0x70);
+    this->write_register_(REG_PA_CONFIG, (this->pa_power_ - 0) | this->pa_pin_ | PA_MAX_POWER);
   }
 
   // disable packet mode

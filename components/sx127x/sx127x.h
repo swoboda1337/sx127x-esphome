@@ -45,7 +45,7 @@ enum SX127xOokPeak : uint8_t {
   OOK_STEP_3_0 = 0x04,
   OOK_STEP_4_0 = 0x05,
   OOK_STEP_5_0 = 0x06,
-  OOK_STEP_6_0 = 0x07,
+  OOK_STEP_6_0 = 0x07
 };
 
 enum SX127xRxBw : uint8_t {
@@ -72,7 +72,7 @@ enum SX127xRxBw : uint8_t {
   RX_BW_250_0 = 0x01
 };
 
-enum SX127xPaConfig : uint8_t { PA_PIN_RFO = 0x00, PA_PIN_BOOST = 0x80 };
+enum SX127xPaConfig : uint8_t { PA_PIN_RFO = 0x00, PA_PIN_BOOST = 0x80, PA_MAX_POWER = 0x70 };
 
 class SX127x : public Component,
                public spi::SPIDevice<spi::BIT_ORDER_MSB_FIRST, spi::CLOCK_POLARITY_LOW, spi::CLOCK_PHASE_LEADING,
