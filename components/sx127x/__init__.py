@@ -1,16 +1,16 @@
-import esphome.codegen as cg
-import esphome.config_validation as cv
 from esphome import pins
+import esphome.codegen as cg
 from esphome.components import spi
+import esphome.config_validation as cv
 from esphome.const import CONF_ID
 
 CODEOWNERS = ["@swoboda1337"]
 DEPENDENCIES = ["spi"]
 
-CONF_PA_POWER = 'pa_power'
-CONF_PA_PIN = 'pa_pin'
-CONF_NSS_PIN = 'nss_pin'
-CONF_RST_PIN = 'rst_pin'
+CONF_PA_POWER = "pa_power"
+CONF_PA_PIN = "pa_pin"
+CONF_NSS_PIN = "nss_pin"
+CONF_RST_PIN = "rst_pin"
 CONF_FREQUENCY = "frequency"
 CONF_MODULATION = "modulation"
 CONF_RX_FLOOR = "rx_floor"
@@ -54,25 +54,24 @@ RX_BW = {
     "125_0kHz": SX127xRxBw.RX_BW_125_0,
     "166_7kHz": SX127xRxBw.RX_BW_166_7,
     "200_0kHz": SX127xRxBw.RX_BW_200_0,
-    "250_0kHz": SX127xRxBw.RX_BW_250_0
+    "250_0kHz": SX127xRxBw.RX_BW_250_0,
 }
 
-CONFIG_SCHEMA = (
-    cv.Schema(
-        {
-            cv.GenerateID(): cv.declare_id(SX127x),
-            cv.Required(CONF_RST_PIN): pins.internal_gpio_output_pin_schema,
-            cv.Required(CONF_NSS_PIN): pins.internal_gpio_output_pin_schema,
-            cv.Required(CONF_FREQUENCY): cv.int_range(min=137000000, max=1020000000),
-            cv.Required(CONF_MODULATION): cv.enum(MOD),
-            cv.Optional(CONF_RX_FLOOR, default=-94): cv.float_range(min=-128, max=-1),
-            cv.Optional(CONF_RX_START, default=True): cv.boolean,
-            cv.Optional(CONF_RX_BANDWIDTH, default="50_0kHz"): cv.enum(RX_BW),
-            cv.Optional(CONF_PA_PIN, default="BOOST"): cv.enum(PA_PIN),
-            cv.Optional(CONF_PA_POWER, default=17): cv.int_range(min=0, max=17),
-        }
-    ).extend(spi.spi_device_schema(False, 8e6, 'mode0'))
-)
+CONFIG_SCHEMA = cv.Schema(
+    {
+        cv.GenerateID(): cv.declare_id(SX127x),
+        cv.Required(CONF_RST_PIN): pins.internal_gpio_output_pin_schema,
+        cv.Required(CONF_NSS_PIN): pins.internal_gpio_output_pin_schema,
+        cv.Required(CONF_FREQUENCY): cv.int_range(min=137000000, max=1020000000),
+        cv.Required(CONF_MODULATION): cv.enum(MOD),
+        cv.Optional(CONF_RX_FLOOR, default=-94): cv.float_range(min=-128, max=-1),
+        cv.Optional(CONF_RX_START, default=True): cv.boolean,
+        cv.Optional(CONF_RX_BANDWIDTH, default="50_0kHz"): cv.enum(RX_BW),
+        cv.Optional(CONF_PA_PIN, default="BOOST"): cv.enum(PA_PIN),
+        cv.Optional(CONF_PA_POWER, default=17): cv.int_range(min=0, max=17),
+    }
+).extend(spi.spi_device_schema(False, 8e6, "mode0"))
+
 
 async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])

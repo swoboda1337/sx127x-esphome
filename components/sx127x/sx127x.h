@@ -72,16 +72,11 @@ enum SX127xRxBw : uint8_t {
   RX_BW_250_0 = 0x01
 };
 
-enum SX127xPaConfig : uint8_t {
-  PA_PIN_RFO = 0x00,
-  PA_PIN_BOOST = 0x80
-};
+enum SX127xPaConfig : uint8_t { PA_PIN_RFO = 0x00, PA_PIN_BOOST = 0x80 };
 
 class SX127x : public Component,
-               public spi::SPIDevice<spi::BIT_ORDER_MSB_FIRST, 
-                                     spi::CLOCK_POLARITY_LOW, 
-                                     spi::CLOCK_PHASE_LEADING,
-                                     spi::DATA_RATE_8MHZ> { 
+               public spi::SPIDevice<spi::BIT_ORDER_MSB_FIRST, spi::CLOCK_POLARITY_LOW, spi::CLOCK_PHASE_LEADING,
+                                     spi::DATA_RATE_8MHZ> {
  public:
   float get_setup_priority() const override { return setup_priority::HARDWARE; }
   void setup() override;
@@ -107,7 +102,7 @@ class SX127x : public Component,
   InternalGPIOPin *rst_pin_{nullptr};
   InternalGPIOPin *nss_pin_{nullptr};
   SX127xPaConfig pa_pin_;
-  SX127xRxBw rx_bandwidth_; 
+  SX127xRxBw rx_bandwidth_;
   SX127xOpMode modulation_;
   uint32_t frequency_;
   uint32_t pa_power_;

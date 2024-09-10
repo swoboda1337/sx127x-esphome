@@ -5,13 +5,9 @@ namespace sx127x {
 
 static const char *const TAG = "sx127x";
 
-uint8_t SX127x::read_register_(uint8_t reg) {
-  return this->single_transfer_((uint8_t)reg & 0x7f, 0x00);
-}
+uint8_t SX127x::read_register_(uint8_t reg) { return this->single_transfer_((uint8_t) reg & 0x7f, 0x00); }
 
-void SX127x::write_register_(uint8_t reg, uint8_t value) {
-  this->single_transfer_((uint8_t)reg | 0x80, value);
-}
+void SX127x::write_register_(uint8_t reg, uint8_t value) { this->single_transfer_((uint8_t) reg | 0x80, value); }
 
 uint8_t SX127x::single_transfer_(uint8_t address, uint8_t value) {
   uint8_t response;
@@ -59,11 +55,11 @@ void SX127x::configure() {
   delay(1);
 
   // set freq
-  uint64_t frf = ((uint64_t)this->frequency_ << 19) / 32000000;
-  this->write_register_(REG_FRF_MSB, (uint8_t)((frf >> 16) & 0xFF));
-  this->write_register_(REG_FRF_MID, (uint8_t)((frf >> 8) & 0xFF));
-  this->write_register_(REG_FRF_LSB, (uint8_t)((frf >> 0) & 0xFF));
-  
+  uint64_t frf = ((uint64_t) this->frequency_ << 19) / 32000000;
+  this->write_register_(REG_FRF_MSB, (uint8_t) ((frf >> 16) & 0xFF));
+  this->write_register_(REG_FRF_MID, (uint8_t) ((frf >> 8) & 0xFF));
+  this->write_register_(REG_FRF_LSB, (uint8_t) ((frf >> 0) & 0xFF));
+
   // set the channel bw
   this->write_register_(REG_RX_BW, this->rx_bandwidth_);
 
@@ -89,7 +85,7 @@ void SX127x::configure() {
 
   // enable standby mode
   this->set_mode_standby();
-  
+
   // enable rx mode
   if (this->rx_start_) {
     this->set_mode_rx();
@@ -116,15 +112,15 @@ void SX127x::set_mode_tx() {
 void SX127x::dump_config() {
   uint32_t rx_bw_mant = 16 + (this->rx_bandwidth_ >> 3) * 4;
   uint32_t rx_bw_exp = this->rx_bandwidth_ & 0x7;
-  float rx_bw = (float)32000000 / (rx_bw_mant * (1 << (rx_bw_exp + 2)));
+  float rx_bw = (float) 32000000 / (rx_bw_mant * (1 << (rx_bw_exp + 2)));
   ESP_LOGCONFIG(TAG, "SX127x:");
   LOG_PIN("  NSS Pin: ", this->nss_pin_);
   LOG_PIN("  RST Pin: ", this->rst_pin_);
   ESP_LOGCONFIG(TAG, "  PA Pin: %s", this->pa_pin_ == PA_PIN_BOOST ? "BOOST" : "RFO");
   ESP_LOGCONFIG(TAG, "  PA Power: %d dBm", this->pa_power_);
-  ESP_LOGCONFIG(TAG, "  Frequency: %f MHz", (float)this->frequency_ / 1000000);
+  ESP_LOGCONFIG(TAG, "  Frequency: %f MHz", (float) this->frequency_ / 1000000);
   ESP_LOGCONFIG(TAG, "  Modulation: %s", this->modulation_ == MOD_FSK ? "FSK" : "OOK");
-  ESP_LOGCONFIG(TAG, "  Rx Bandwidth: %.1f kHz", (float)rx_bw / 1000);
+  ESP_LOGCONFIG(TAG, "  Rx Bandwidth: %.1f kHz", (float) rx_bw / 1000);
   ESP_LOGCONFIG(TAG, "  Rx Start: %s", this->rx_start_ ? "true" : "false");
   if (this->modulation_ == MOD_OOK) {
     ESP_LOGCONFIG(TAG, "  Rx Floor: %.1f dBm", this->rx_floor_);
