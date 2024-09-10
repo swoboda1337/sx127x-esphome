@@ -2,7 +2,7 @@ from esphome import pins
 import esphome.codegen as cg
 from esphome.components import spi
 import esphome.config_validation as cv
-from esphome.const import CONF_ID, CONF_FREQUENCY
+from esphome.const import CONF_FREQUENCY, CONF_ID
 
 CODEOWNERS = ["@swoboda1337"]
 DEPENDENCIES = ["spi"]
