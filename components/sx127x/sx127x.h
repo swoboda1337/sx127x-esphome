@@ -98,6 +98,7 @@ class SX127x : public Component,
   void set_mode_standby();
   void set_mode_tx();
   void set_mode_rx();
+  void configure();
 
  protected:
   void write_register_(uint8_t address, uint8_t value);

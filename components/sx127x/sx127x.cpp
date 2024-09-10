@@ -31,15 +31,22 @@ void SX127x::setup() {
   this->nss_pin_->setup();
   this->nss_pin_->digital_write(true);
 
-  // setup reset and toggle to reset chip
+  // setup reset
   this->rst_pin_->setup();
+
+  // start spi
+  this->spi_setup();
+
+  // configure rf
+  this->configure();
+}
+
+void SX127x::configure() {
+  // toggle chip reset
   this->rst_pin_->digital_write(false);
   delay(1);
   this->rst_pin_->digital_write(true);
   delay(10);
-
-  // start spi
-  this->spi_setup();
 
   // check silicon version to make sure hw is ok
   if (this->read_register_(REG_VERSION) != 0x12) {
