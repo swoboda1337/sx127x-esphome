@@ -120,6 +120,8 @@ void SX127x::dump_config() {
   ESP_LOGCONFIG(TAG, "SX127x:");
   LOG_PIN("  NSS Pin: ", this->nss_pin_);
   LOG_PIN("  RST Pin: ", this->rst_pin_);
+  ESP_LOGCONFIG(TAG, "  PA Pin: %s", this->pa_pin_ == PA_PIN_BOOST ? "BOOST" : "RFO");
+  ESP_LOGCONFIG(TAG, "  PA Power: %d dBm", this->pa_power_);
   ESP_LOGCONFIG(TAG, "  Frequency: %f MHz", (float)this->frequency_ / 1000000);
   ESP_LOGCONFIG(TAG, "  Modulation: %s", this->modulation_ == MOD_FSK ? "FSK" : "OOK");
   ESP_LOGCONFIG(TAG, "  Rx Bandwidth: %.1f kHz", (float)rx_bw / 1000);
@@ -127,8 +129,6 @@ void SX127x::dump_config() {
   if (this->modulation_ == MOD_OOK) {
     ESP_LOGCONFIG(TAG, "  Rx Floor: %.1f dBm", this->rx_floor_);
   }
-  ESP_LOGCONFIG(TAG, "  PA Pin: %s", this->pa_pin_ == PA_PIN_BOOST ? "BOOST" : "RFO");
-  ESP_LOGCONFIG(TAG, "  PA Power: %d dBm", this->pa_power_);
   if (this->is_failed()) {
     ESP_LOGE(TAG, "Configuring SX127x failed");
   }
