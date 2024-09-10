@@ -96,9 +96,9 @@ class SX127x : public Component,
   void configure();
 
  protected:
-  void write_register_(uint8_t address, uint8_t value);
-  uint8_t single_transfer_(uint8_t address, uint8_t value);
-  uint8_t read_register_(uint8_t address);
+  void write_register_(uint8_t reg, uint8_t value);
+  uint8_t single_transfer_(uint8_t reg, uint8_t value);
+  uint8_t read_register_(uint8_t reg);
   InternalGPIOPin *rst_pin_{nullptr};
   InternalGPIOPin *nss_pin_{nullptr};
   SX127xPaConfig pa_pin_;

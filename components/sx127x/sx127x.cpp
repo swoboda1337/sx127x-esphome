@@ -9,11 +9,11 @@ uint8_t SX127x::read_register_(uint8_t reg) { return this->single_transfer_((uin
 
 void SX127x::write_register_(uint8_t reg, uint8_t value) { this->single_transfer_((uint8_t) reg | 0x80, value); }
 
-uint8_t SX127x::single_transfer_(uint8_t address, uint8_t value) {
+uint8_t SX127x::single_transfer_(uint8_t reg, uint8_t value) {
   uint8_t response;
   this->delegate_->begin_transaction();
   this->nss_pin_->digital_write(false);
-  this->delegate_->transfer(address);
+  this->delegate_->transfer(reg);
   response = this->delegate_->transfer(value);
   this->nss_pin_->digital_write(true);
   this->delegate_->end_transaction();
@@ -65,10 +65,11 @@ void SX127x::configure() {
 
   // config pa
   if (this->pa_pin_ == PA_PIN_BOOST) {
-    this->pa_power_ = std::min(std::max(this->pa_power_, 2u), 17u);
+    this->pa_power_ = std::max(this->pa_power_, 2u);
+    this->pa_power_ = std::min(this->pa_power_, 17u);
     this->write_register_(REG_PA_CONFIG, (this->pa_power_ - 2) | this->pa_pin_ | PA_MAX_POWER);
   } else {
-    this->pa_power_ = std::min(std::max(this->pa_power_, 0u), 14u);
+    this->pa_power_ = std::min(this->pa_power_, 14u);
     this->write_register_(REG_PA_CONFIG, (this->pa_power_ - 0) | this->pa_pin_ | PA_MAX_POWER);
   }
 
