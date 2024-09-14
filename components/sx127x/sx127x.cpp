@@ -124,7 +124,11 @@ void SX127x::on_transmit() {
 }
 
 void SX127x::on_complete() {
-  this->set_mode_standby();
+  if (this->rx_start_) {
+    this->set_mode_rx();
+  } else {
+    this->set_mode_standby();
+  }
 }
 #endif
 
