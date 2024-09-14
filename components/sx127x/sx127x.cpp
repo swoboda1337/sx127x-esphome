@@ -37,7 +37,7 @@ void SX127x::setup() {
   this->configure();
 
 #ifdef USE_REMOTE_TRANSMITTER
-  // registers tx callbacks
+  // register tx callbacks
   if (this->remote_transmitter_ != NULL) {
     this->remote_transmitter_->register_listener(this);
   }
