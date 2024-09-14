@@ -79,7 +79,7 @@ void SX127x::configure() {
 
   // disable bit synchronizer, disable sync generation and setup threshold
   this->write_register_(REG_SYNC_CONFIG, 0x00);
-  this->write_register_(REG_OOK_PEAK, OOK_THRESH_PEAK | OOK_THRESH_STEP_0_5);
+  this->write_register_(REG_OOK_PEAK, OOK_THRESH_STEP_0_5 | OOK_THRESH_PEAK);
   this->write_register_(REG_OOK_AVG, OOK_THRESH_DEC_1_8);
 
   // set ook floor
