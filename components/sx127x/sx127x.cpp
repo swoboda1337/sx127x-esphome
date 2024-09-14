@@ -23,13 +23,6 @@ uint8_t SX127x::single_transfer_(uint8_t reg, uint8_t value) {
 void SX127x::setup() {
   ESP_LOGCONFIG(TAG, "Setting up SX127x...");
 
-#ifdef USE_REMOTE_TRANSMITTER
-  // registers tx callbacks
-  if (this->remote_transmitter_ != NULL) {
-    this->remote_transmitter_->register_listener(this);
-  }
-#endif
-
   // setup nss and set high
   this->nss_pin_->setup();
   this->nss_pin_->digital_write(true);
@@ -42,6 +35,13 @@ void SX127x::setup() {
 
   // configure rf
   this->configure();
+
+#ifdef USE_REMOTE_TRANSMITTER
+  // registers tx callbacks
+  if (this->remote_transmitter_ != NULL) {
+    this->remote_transmitter_->register_listener(this);
+  }
+#endif
 }
 
 void SX127x::configure() {
@@ -120,13 +120,11 @@ void SX127x::set_mode_tx() {
 
 #ifdef USE_REMOTE_TRANSMITTER
 void SX127x::on_transmit() {
-  ESP_LOGD(TAG, "Set tx mode");
   this->set_mode_tx();
 }
 
 void SX127x::on_complete() {
   this->set_mode_standby();
-  ESP_LOGD(TAG, "Set standby mode");
 }
 #endif
 

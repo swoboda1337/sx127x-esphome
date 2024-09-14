@@ -2,7 +2,6 @@
 
 #include "esphome/components/spi/spi.h"
 #ifdef USE_REMOTE_TRANSMITTER
-#include "esphome/components/remote_base/remote_base.h"
 #include "esphome/components/remote_transmitter/remote_transmitter.h"
 #endif
 
