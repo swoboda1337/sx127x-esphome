@@ -36,7 +36,7 @@ Receiver example to use in ESPHome, timing data is read by remote receiver from 
       memory_blocks: 8
       dump: raw
 
-Transmitter example to use in ESPHome, timing data is sent on GPIO32 by remote transmitter (ESPHome needs an API change so the transmitter start/stop is handled automatically):
+Transmitter example to use in ESPHome, timing data is sent on GPIO32 by remote transmitter. ESPHome needs an API change so the transmitter start/stop is handled automatically, for now the mode change has to be called manually via lambda:
 
     sx127x:
       id: sx127x_id
@@ -110,7 +110,7 @@ Example of reconfiguring radio at runtime:
           - lambda: |-
              id(sx127x_id)->set_mode_standby();
 
-Example of rx and tx on the same radio, for some reason remote transmitter needs to be setup again every time. Hopefully this can be resolved when the platform library is eventually upgraded:
+Example of rx and tx on the same radio. Note remote transmitter setup needs to be called again before transmitting after a gpio mode change. Hopefully this work around can be removed in the future when the ESPHome platform library gets updated:
 
     sx127x:
       id: sx127x_id
