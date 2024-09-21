@@ -76,7 +76,7 @@ Transmitter example to use in ESPHome, timing data is sent on GPIO32 by remote t
           - lambda: |-
              id(sx127x_id)->set_mode_standby();
 
-Example of reconfiguring radio at runtime. Any public function in the sx127x component can be called via lambda (see sx127x.h). Note settings changes are only applied after calling configure: 
+Example of reconfiguring radio at runtime. Any public function in the sx127x component can be called via lambda (see sx127x.h). Note settings are only applied after calling configure (except mode changes which are applied immediately): 
 
     sx127x:
       id: sx127x_id
