@@ -97,16 +97,17 @@ void SX127x::configure() {
 
   // enable standby mode
   this->set_mode_standby();
+  delay(1);
 
   // enable rx mode
   if (this->rx_start_) {
     this->set_mode_rx();
+    delay(1);
   }
 }
 
 void SX127x::set_mode_standby() {
   this->write_register_(REG_OP_MODE, this->modulation_ | MODE_LF_ON | MODE_STDBY);
-  delay(1);
 }
 
 void SX127x::set_mode_rx() {
