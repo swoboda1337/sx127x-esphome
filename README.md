@@ -2,7 +2,7 @@ ESPHome SX127x driver.
 
 SX127x component configures SX1276, SX1277, SX1278 or SX1279 hardware for use in ESPHome. 
 
-Tested with the LILYGO LoRa32 V2.1_1.6 board. Note the small 433 MHz antennas that come with these boards work fine but are not ideal. The antenna gain is really poor and it’s too close to the Wi-Fi antenna which can cause glitches. A proper antenna like the Siretta Tango 9 has better range and doesn’t glitch when Wi-Fi transmits.
+Tested with the LILYGO LoRa32 V2.1_1.6 / T3 V1.6.1 board. Note the small 433 MHz antennas that come with these boards work fine but are not ideal. The antenna gain is really poor and it’s too close to the Wi-Fi antenna which can cause glitches. A proper antenna like the Siretta Tango 9 has better range and doesn’t glitch when Wi-Fi transmits.
 
 When receiving OOK data rx_floor should be set appropriately for your environment / device / antenna. If the floor is set too high (ie closer to 0) the radio will ignore everything. If the floor is set too low (ie closer to -128) then noise will overwhelm remote receiver. To calibrate this it is recommended to set the log level to verbose and the remote receiver filter to 3us. Play around with the floor, -90 is a good starting point, it will be clear from the logs when too much noise is getting through. 
 
