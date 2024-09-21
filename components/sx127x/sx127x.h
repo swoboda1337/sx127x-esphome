@@ -7,10 +7,13 @@ namespace sx127x {
 
 enum SX127xReg : uint8_t {
   REG_OP_MODE = 0x01,
+  REG_FDEV_MSB = 0x04,
+  REG_FDEV_LSB = 0x05,
   REG_FRF_MSB = 0x06,
   REG_FRF_MID = 0x07,
   REG_FRF_LSB = 0x08,
   REG_PA_CONFIG = 0x09,
+  REG_PA_RAMP = 0x0A,
   REG_RX_BW = 0x12,
   REG_OOK_PEAK = 0x14,
   REG_OOK_FIX = 0x15,
@@ -84,6 +87,29 @@ enum SX127xRxBw : uint8_t {
   RX_BW_250_0 = 0x01
 };
 
+enum SX127xPaRamp : uint8_t {
+  SHAPING_BT_0_3 = 0x60,
+  SHAPING_BT_0_5 = 0x40,
+  SHAPING_BT_1_0 = 0x20,
+  SHAPING_NONE = 0x00,
+  PA_RAMP_10 = 0x0F,
+  PA_RAMP_12 = 0x0E,
+  PA_RAMP_15 = 0x0D,
+  PA_RAMP_20 = 0x0C,
+  PA_RAMP_25 = 0x0B,
+  PA_RAMP_31 = 0x0A,
+  PA_RAMP_40 = 0x09,
+  PA_RAMP_50 = 0x08,
+  PA_RAMP_62 = 0x07,
+  PA_RAMP_100 = 0x06,
+  PA_RAMP_125 = 0x05,
+  PA_RAMP_250 = 0x04,
+  PA_RAMP_500 = 0x03,
+  PA_RAMP_1000 = 0x02,
+  PA_RAMP_2000 = 0x01,
+  PA_RAMP_3400 = 0x00
+};
+
 enum SX127xPaConfig : uint8_t { PA_PIN_RFO = 0x00, PA_PIN_BOOST = 0x80, PA_MAX_POWER = 0x70 };
 
 class SX127x : public Component,
@@ -97,6 +123,9 @@ class SX127x : public Component,
   void set_nss_pin(InternalGPIOPin *nss_pin) { this->nss_pin_ = nss_pin; }
   void set_frequency(uint32_t frequency) { this->frequency_ = frequency; }
   void set_modulation(SX127xOpMode modulation) { this->modulation_ = modulation; }
+  void set_fsk_shaping(SX127xPaRamp shaping) { this->fsk_shaping_ = shaping; }
+  void set_fsk_ramp(SX127xPaRamp ramp) { this->fsk_ramp_ = ramp; }
+  void set_fsk_fdev(uint32_t fdev) { this->fsk_fdev_ = fdev; }
   void set_rx_start(bool start) { this->rx_start_ = start; }
   void set_rx_floor(float floor) { this->rx_floor_ = floor; }
   void set_rx_bandwidth(SX127xRxBw bandwidth) { this->rx_bandwidth_ = bandwidth; }
@@ -116,6 +145,9 @@ class SX127x : public Component,
   SX127xPaConfig pa_pin_;
   SX127xRxBw rx_bandwidth_;
   SX127xOpMode modulation_;
+  SX127xPaRamp fsk_shaping_;
+  SX127xPaRamp fsk_ramp_;
+  uint32_t fsk_fdev_;
   uint32_t frequency_;
   uint32_t pa_power_;
   float rx_floor_;

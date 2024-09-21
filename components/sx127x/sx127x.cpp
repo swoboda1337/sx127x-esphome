@@ -60,6 +60,11 @@ void SX127x::configure() {
   this->write_register_(REG_FRF_MID, (uint8_t) ((frf >> 8) & 0xFF));
   this->write_register_(REG_FRF_LSB, (uint8_t) ((frf >> 0) & 0xFF));
 
+  // set fdev
+  uint32_t fdev = std::min(this->fsk_fdev_ / 61, 0x3FFFu);
+  this->write_register_(REG_FDEV_MSB, (uint8_t) ((fdev >> 8) & 0xFF));
+  this->write_register_(REG_FDEV_LSB, (uint8_t) ((fdev >> 0) & 0xFF));
+
   // set the channel bw
   this->write_register_(REG_RX_BW, this->rx_bandwidth_);
 
@@ -71,6 +76,11 @@ void SX127x::configure() {
   } else {
     this->pa_power_ = std::min(this->pa_power_, 14u);
     this->write_register_(REG_PA_CONFIG, (this->pa_power_ - 0) | this->pa_pin_ | PA_MAX_POWER);
+  }
+  if (this->modulation_ == MOD_FSK) {
+    this->write_register_(REG_PA_RAMP, this->fsk_ramp_ | this->fsk_shaping_);
+  } else {
+    this->write_register_(REG_PA_RAMP, 0x00);
   }
 
   // disable packet mode
@@ -112,6 +122,7 @@ void SX127x::set_mode_tx() {
 }
 
 void SX127x::dump_config() {
+  static const uint16_t RAMP_LUT[16] = {3400, 2000, 1000, 500, 250, 125, 100, 62, 50, 40, 31, 25, 20, 15, 12, 10};
   uint32_t rx_bw_mant = 16 + (this->rx_bandwidth_ >> 3) * 4;
   uint32_t rx_bw_exp = this->rx_bandwidth_ & 0x7;
   float rx_bw = (float) 32000000 / (rx_bw_mant * (1 << (rx_bw_exp + 2)));
@@ -124,8 +135,17 @@ void SX127x::dump_config() {
   ESP_LOGCONFIG(TAG, "  Modulation: %s", this->modulation_ == MOD_FSK ? "FSK" : "OOK");
   ESP_LOGCONFIG(TAG, "  Rx Bandwidth: %.1f kHz", (float) rx_bw / 1000);
   ESP_LOGCONFIG(TAG, "  Rx Start: %s", this->rx_start_ ? "true" : "false");
-  if (this->modulation_ == MOD_OOK) {
-    ESP_LOGCONFIG(TAG, "  Rx Floor: %.1f dBm", this->rx_floor_);
+  ESP_LOGCONFIG(TAG, "  Rx Floor: %.1f dBm", this->rx_floor_);
+  ESP_LOGCONFIG(TAG, "  FSK Fdev: %d Hz", this->fsk_fdev_);
+  ESP_LOGCONFIG(TAG, "  FSK Ramp: %d us", RAMP_LUT[this->fsk_ramp_]);
+  if (this->fsk_shaping_ == SHAPING_BT_1_0) {
+    ESP_LOGCONFIG(TAG, "  FSK Shaping: BT_1_0");
+  } else if (this->fsk_shaping_ == SHAPING_BT_0_5) {
+    ESP_LOGCONFIG(TAG, "  FSK Shaping: BT_0_5");
+  } else if (this->fsk_shaping_ == SHAPING_BT_0_3) {
+    ESP_LOGCONFIG(TAG, "  FSK Shaping: BT_0_3");
+  } else {
+    ESP_LOGCONFIG(TAG, "  FSK Shaping: NONE");
   }
   if (this->is_failed()) {
     ESP_LOGE(TAG, "Configuring SX127x failed");
