@@ -110,7 +110,7 @@ Example of reconfiguring radio at runtime. Any public function in the sx127x com
           - lambda: |-
              id(sx127x_id)->set_mode_standby();
 
-Example of rx and tx on the same radio. Note remote transmitter setup needs to be called again before transmitting after a gpio mode change. Hopefully this work around can be removed in the future when the ESPHome platform library gets updated:
+Example of rx and tx on the same radio and the same gpio. Note remote transmitter setup needs to be called again before transmitting after a gpio mode change. Hopefully this work around can be removed in the future when the ESPHome platform library gets updated:
 
     sx127x:
       id: sx127x_id
