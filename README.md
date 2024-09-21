@@ -146,6 +146,7 @@ Example of rx and tx on the same radio. Note remote transmitter setup needs to b
       - interval: 20sec
         then:
           - lambda: |-
+             id(sx127x_id)->set_mode_standby();
              id(tx_gpio_id)->pin_mode(gpio::FLAG_OUTPUT);
              id(tx_id)->setup();
              id(sx127x_id)->set_mode_tx();
@@ -155,5 +156,6 @@ Example of rx and tx on the same radio. Note remote transmitter setup needs to b
                 times: 3
                 wait_time: 1000us
           - lambda: |-
-             id(sx127x_id)->set_mode_rx();
+             id(sx127x_id)->set_mode_standby();
              id(rx_gpio_id)->pin_mode(gpio::FLAG_INPUT);
+             id(sx127x_id)->set_mode_rx();
