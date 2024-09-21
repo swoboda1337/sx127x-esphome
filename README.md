@@ -120,8 +120,8 @@ Example of rx and tx on the same radio. Note remote transmitter setup needs to b
       pa_power: 12
       frequency: 433920000
       rx_bandwidth: 50_0kHz
-      rx_floor: -80
-      rx_start: false
+      rx_floor: -85
+      rx_start: true
       modulation: OOK
 
     remote_transmitter:
