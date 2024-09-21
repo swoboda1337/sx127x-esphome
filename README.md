@@ -38,17 +38,45 @@ Receiver example to use in ESPHome, timing data is read by remote receiver from 
 
 Transmitter example to use in ESPHome, timing data is sent on GPIO32 by remote transmitter (ESPHome needs an API change so the transmitter start/stop is handled automatically):
 
-    external_components:
-      - source:
-          type: git
-          url: https://github.com/swoboda1337/sx127x-esphome
-          ref: main
-        refresh: 1d
+    sx127x:
+      id: sx127x_id
+      nss_pin: GPIO18
+      rst_pin: GPIO23
+      frequency: 433920000
+      modulation: OOK
+      pa_pin: BOOST
+      pa_power: 17
+      rx_start: false
 
-    spi:
-      clk_pin: GPIO5
-      mosi_pin: GPIO27
-      miso_pin: GPIO19
+    remote_transmitter:
+      id: remote_transmitter_id
+      pin: GPIO32
+      carrier_duty_percent: 100%
+
+    interval:
+      - interval: 20sec
+        then:
+          - lambda: |-
+              esphome::remote_base::RawTimings timings = {601, -613, 601, -613, 601, -613, 601, -613, 209, -405, 209, -405, 209, -405, 209, -405, 405, -209, 209, -405, 405, -209, 405, -209, 209, -405, 209, -405, 405, -209, 405, -209, 209, -405, 209, -405, 405, -209, 405, -209, 209, -405, 405, -209, 405, -209, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 405, -209, 209, -405, 209, -405, 405, -209, 209, -405, 209, -405, 209, -405, 405, -209, 209, -405, 209, -405, 405, -209, 209, -405, 209, -405, 209, -405, 209, -405, 405, -209, 209, -405, 209, -405, 405, -209, 209, -405, 209, -405, 405, -209, 405, -209, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 405, -209, 209, -405, 209, -405, 405, -209};
+              auto call = id(remote_transmitter_id).transmit();
+              call.get_data()->set_data(timings);
+              call.set_send_times(2);
+              id(sx127x_id).set_mode_tx();
+              call.perform();
+              id(sx127x_id).set_mode_standby();
+      - interval: 30sec
+        then:
+          - lambda: |-
+             id(sx127x_id)->set_mode_tx();
+          - remote_transmitter.transmit_raw:
+              code: [601, -613, 601, -613, 601, -613, 601, -613, 209, -405, 209, -405, 209, -405, 209, -405, 405, -209, 209, -405, 405, -209, 405, -209, 209, -405, 209, -405, 405, -209, 405, -209, 209, -405, 209, -405, 405, -209, 405, -209, 209, -405, 405, -209, 405, -209, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 405, -209, 209, -405, 209, -405, 405, -209, 209, -405, 209, -405, 209, -405, 405, -209, 209, -405, 209, -405, 405, -209, 209, -405, 209, -405, 209, -405, 209, -405, 405, -209, 209, -405, 209, -405, 405, -209, 209, -405, 209, -405, 405, -209, 405, -209, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 405, -209, 209, -405, 209, -405, 405, -209]
+              repeat:
+                times: 2
+                wait_time: 1000us
+          - lambda: |-
+             id(sx127x_id)->set_mode_standby();
+
+Example of reconfiguring radio at runtime:
 
     sx127x:
       id: sx127x_id
@@ -66,13 +94,66 @@ Transmitter example to use in ESPHome, timing data is sent on GPIO32 by remote t
       carrier_duty_percent: 100%
 
     interval:
-      - interval: 18sec
+      - interval: 30sec
         then:
           - lambda: |-
-              esphome::remote_base::RawTimings timings = {601, -613, 601, -613, 601, -613, 601, -613, 209, -405, 209, -405, 209, -405, 209, -405, 405, -209, 209, -405, 405, -209, 405, -209, 209, -405, 209, -405, 405, -209, 405, -209, 209, -405, 209, -405, 405, -209, 405, -209, 209, -405, 405, -209, 405, -209, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 405, -209, 209, -405, 209, -405, 405, -209, 209, -405, 209, -405, 209, -405, 405, -209, 209, -405, 209, -405, 405, -209, 209, -405, 209, -405, 209, -405, 209, -405, 405, -209, 209, -405, 209, -405, 405, -209, 209, -405, 209, -405, 405, -209, 405, -209, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 405, -209, 209, -405, 209, -405, 405, -209};
-              auto call = id(remote_transmitter_id).transmit();
-              call.get_data()->set_data(timings);
-              call.set_send_times(2);
-              id(sx127x_id).set_mode_tx();
-              call.perform();
-              id(sx127x_id).set_mode_standby();
+             id(sx127x_id)->set_frequency(433920000);
+             id(sx127x_id)->set_rx_bandwidth(sx127x::RX_BW_50_0);
+             id(sx127x_id)->set_modulation(sx127x::MOD_OOK);
+             id(sx127x_id)->configure();
+             id(sx127x_id)->set_mode_tx();
+          - remote_transmitter.transmit_raw:
+              code: [601, -613, 601, -613, 601, -613, 601, -613, 209, -405, 209, -405, 209, -405, 209, -405, 405, -209, 209, -405, 405, -209, 405, -209, 209, -405, 209, -405, 405, -209, 405, -209, 209, -405, 209, -405, 405, -209, 405, -209, 209, -405, 405, -209, 405, -209, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 405, -209, 209, -405, 209, -405, 405, -209, 209, -405, 209, -405, 209, -405, 405, -209, 209, -405, 209, -405, 405, -209, 209, -405, 209, -405, 209, -405, 209, -405, 405, -209, 209, -405, 209, -405, 405, -209, 209, -405, 209, -405, 405, -209, 405, -209, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 405, -209, 209, -405, 209, -405, 405, -209]
+              repeat:
+                times: 3
+                wait_time: 1000us
+          - lambda: |-
+             id(sx127x_id)->set_mode_standby();
+
+Example of rx and tx on the same radio, for some reason remote transmitter needs to be setup again every time. Hopefully this can be resolved when the platform library is eventually upgraded:
+
+    sx127x:
+      id: sx127x_id
+      nss_pin: GPIO18
+      rst_pin: GPIO23
+      pa_pin: BOOST
+      pa_power: 12
+      frequency: 433920000
+      rx_bandwidth: 50_0kHz
+      rx_floor: -80
+      rx_start: false
+      modulation: OOK
+
+    remote_transmitter:
+      id: tx_id
+      pin:
+        id: tx_gpio_id
+        number: GPIO32
+        allow_other_uses: true
+      carrier_duty_percent: 100%
+
+    remote_receiver:
+      id: rx_id
+      pin:
+        id: rx_gpio_id
+        number: GPIO32
+        allow_other_uses: true
+      filter: 150us
+      idle: 800us
+      dump: raw
+
+    interval:
+      - interval: 20sec
+        then:
+          - lambda: |-
+             id(tx_gpio_id)->pin_mode(gpio::FLAG_OUTPUT);
+             id(tx_id)->setup();
+             id(sx127x_id)->set_mode_tx();
+          - remote_transmitter.transmit_raw:
+              code: [614, -614, 600, -614, 614, -614, 601, -614, 405, -209, 405, -209, 209, -405, 209, -405, 209, -405, 405, -209, 209, -405, 405, -209, 209, -405, 405, -209, 209, -405, 405, -209, 209, -405, 209, -405, 209, -405, 405, -209, 209, -405, 405, -209, 405, -209, 405, -209, 405, -209, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 209, -405, 405, -209, 209, -405, 209, -405, 209, -405, 209, -405, 405, -209, 405, -209, 405, -209, 405, -209, 405, -209, 405, -209, 405, -209, 405, -209, 209, -405, 209, -405, 405, -209, 405, -209, 209, -405, 209, -405, 405, -209, 405, -209, 405, -209, 209, -405, 209, -405, 405, -209, 209, -405, 405, -209, 209, -405, 405, -209, 209, -405, 405, -209, 209, -405]
+              repeat:
+                times: 3
+                wait_time: 1000us
+          - lambda: |-
+             id(sx127x_id)->set_mode_rx();
+             id(rx_gpio_id)->pin_mode(gpio::FLAG_INPUT);

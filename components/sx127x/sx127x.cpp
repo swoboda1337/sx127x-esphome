@@ -80,7 +80,7 @@ void SX127x::configure() {
   if (this->modulation_ == MOD_FSK) {
     this->write_register_(REG_PA_RAMP, this->fsk_ramp_ | this->fsk_shaping_);
   } else {
-    this->write_register_(REG_PA_RAMP, 0x00);
+    this->write_register_(REG_PA_RAMP, this->fsk_ramp_);
   }
 
   // disable packet mode
