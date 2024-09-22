@@ -47,6 +47,9 @@ Transmitter example to use in ESPHome, timing data is sent on GPIO32 by remote t
       pa_pin: BOOST
       pa_power: 17
       rx_start: false
+      fsk_fdev: 5000
+      fsk_shaping: NONE
+      fsk_ramp: 40us
 
     remote_transmitter:
       id: remote_transmitter_id
