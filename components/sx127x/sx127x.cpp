@@ -106,9 +106,7 @@ void SX127x::configure() {
   }
 }
 
-void SX127x::set_mode_standby() {
-  this->write_register_(REG_OP_MODE, this->modulation_ | MODE_LF_ON | MODE_STDBY);
-}
+void SX127x::set_mode_standby() { this->write_register_(REG_OP_MODE, this->modulation_ | MODE_LF_ON | MODE_STDBY); }
 
 void SX127x::set_mode_rx() {
   this->write_register_(REG_OP_MODE, this->modulation_ | MODE_LF_ON | MODE_RX_FS);

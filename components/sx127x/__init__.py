@@ -35,7 +35,7 @@ SHAPING = {
     "BT_0_3": SX127xPaRamp.SHAPING_BT_0_3,
     "BT_0_5": SX127xPaRamp.SHAPING_BT_0_5,
     "BT_1_0": SX127xPaRamp.SHAPING_BT_1_0,
-    "NONE": SX127xPaRamp.SHAPING_NONE
+    "NONE": SX127xPaRamp.SHAPING_NONE,
 }
 
 RAMP = {
@@ -54,7 +54,7 @@ RAMP = {
     "500us": SX127xPaRamp.PA_RAMP_500,
     "1000us": SX127xPaRamp.PA_RAMP_1000,
     "2000us": SX127xPaRamp.PA_RAMP_2000,
-    "3400us": SX127xPaRamp.PA_RAMP_3400
+    "3400us": SX127xPaRamp.PA_RAMP_3400,
 }
 
 MOD = {
