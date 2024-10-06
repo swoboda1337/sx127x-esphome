@@ -14,14 +14,34 @@ enum SX127xReg : uint8_t {
   REG_FRF_LSB = 0x08,
   REG_PA_CONFIG = 0x09,
   REG_PA_RAMP = 0x0A,
+  REG_RX_CONFIG = 0x0D,
+  REG_RSSI_THRESH = 0x10,
   REG_RX_BW = 0x12,
   REG_OOK_PEAK = 0x14,
   REG_OOK_FIX = 0x15,
   REG_OOK_AVG = 0x16,
+  REG_AFC_FEI = 0x1a,
   REG_SYNC_CONFIG = 0x27,
   REG_PACKET_CONFIG_1 = 0x30,
   REG_PACKET_CONFIG_2 = 0x31,
+  REG_DIO_MAPPING1 = 0x40,
+  REG_DIO_MAPPING2 = 0x41,
   REG_VERSION = 0x42
+};
+
+enum SX127xRxConfig : uint8_t {
+  RESTART_WITHOUT_LOCK = 0x40,
+  RESTART_WITH_LOCK = 0x20,
+  AFC_AUTO_ON = 0x10,
+  AGC_AUTO_ON = 0x08,
+  TRIGGER_NONE = 0x0,
+  TRIGGER_RSSI = 0x1,
+  TRIGGER_PREABLE = 0x6,
+  TRIGGER_ALL = 0x07,
+};
+
+enum SX127xAfcFei : uint8_t {
+  AFC_AUTO_CLEAR_ON = 0x01,
 };
 
 enum SX127xOpMode : uint8_t {
@@ -88,10 +108,6 @@ enum SX127xRxBw : uint8_t {
 };
 
 enum SX127xPaRamp : uint8_t {
-  SHAPING_BT_0_3 = 0x60,
-  SHAPING_BT_0_5 = 0x40,
-  SHAPING_BT_1_0 = 0x20,
-  SHAPING_NONE = 0x00,
   PA_RAMP_10 = 0x0F,
   PA_RAMP_12 = 0x0E,
   PA_RAMP_15 = 0x0D,
@@ -110,6 +126,14 @@ enum SX127xPaRamp : uint8_t {
   PA_RAMP_3400 = 0x00
 };
 
+struct SX127xStore {
+  static void gpio_intr(SX127xStore *arg);
+  uint32_t dio0_micros{0};
+  bool dio0_irq{false};
+  bool dio2_valid{false};
+  ISRInternalGPIOPin dio2_pin;
+};
+
 enum SX127xPaConfig : uint8_t { PA_PIN_RFO = 0x00, PA_PIN_BOOST = 0x80, PA_MAX_POWER = 0x70 };
 
 class SX127x : public Component,
@@ -118,17 +142,20 @@ class SX127x : public Component,
  public:
   float get_setup_priority() const override { return setup_priority::HARDWARE; }
   void setup() override;
+  void loop() override;
   void dump_config() override;
+  void set_dio0_pin(InternalGPIOPin *dio0_pin) { this->dio0_pin_ = dio0_pin; }
+  void set_dio2_pin(InternalGPIOPin *dio2_pin) { this->dio2_pin_ = dio2_pin; }
   void set_rst_pin(InternalGPIOPin *rst_pin) { this->rst_pin_ = rst_pin; }
   void set_nss_pin(InternalGPIOPin *nss_pin) { this->nss_pin_ = nss_pin; }
   void set_frequency(uint32_t frequency) { this->frequency_ = frequency; }
   void set_modulation(SX127xOpMode modulation) { this->modulation_ = modulation; }
-  void set_fsk_shaping(SX127xPaRamp shaping) { this->fsk_shaping_ = shaping; }
   void set_fsk_ramp(SX127xPaRamp ramp) { this->fsk_ramp_ = ramp; }
   void set_fsk_fdev(uint32_t fdev) { this->fsk_fdev_ = fdev; }
   void set_rx_start(bool start) { this->rx_start_ = start; }
   void set_rx_floor(float floor) { this->rx_floor_ = floor; }
   void set_rx_bandwidth(SX127xRxBw bandwidth) { this->rx_bandwidth_ = bandwidth; }
+  void set_rx_duration(uint32_t duration) { this->rx_duration_ = duration; }
   void set_pa_pin(SX127xPaConfig pin) { this->pa_pin_ = pin; }
   void set_pa_power(uint32_t power) { this->pa_power_ = power; }
   void set_mode_standby();
@@ -140,15 +167,18 @@ class SX127x : public Component,
   void write_register_(uint8_t reg, uint8_t value);
   uint8_t single_transfer_(uint8_t reg, uint8_t value);
   uint8_t read_register_(uint8_t reg);
+  InternalGPIOPin *dio0_pin_{nullptr};
+  InternalGPIOPin *dio2_pin_{nullptr};
   InternalGPIOPin *rst_pin_{nullptr};
   InternalGPIOPin *nss_pin_{nullptr};
+  SX127xStore store_;
   SX127xPaConfig pa_pin_;
   SX127xRxBw rx_bandwidth_;
   SX127xOpMode modulation_;
-  SX127xPaRamp fsk_shaping_;
   SX127xPaRamp fsk_ramp_;
   uint32_t fsk_fdev_;
   uint32_t frequency_;
+  uint32_t rx_duration_;
   uint32_t pa_power_;
   float rx_floor_;
   bool rx_start_;

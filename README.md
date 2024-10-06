@@ -162,3 +162,35 @@ Example of rx and tx on the same radio and the same gpio. Note remote transmitte
              id(sx127x_id)->set_mode_standby();
              id(rx_gpio_id)->pin_mode(gpio::FLAG_INPUT);
              id(sx127x_id)->set_mode_rx();
+
+
+For FSK rx its recommended to set dio0, dio2 and rx duration. Without this there will be too much noise for remote receiver to handle:
+
+    sx127x:
+      id: sx127x_id
+      dio0_pin: GPIO26
+      dio2_pin: 
+        number: GPIO32
+        allow_other_uses: true
+      nss_pin: GPIO18
+      rst_pin: GPIO23
+      frequency: 433920000
+      rx_bandwidth: 50_0kHz
+      rx_duration: 150ms
+      rx_floor: -90
+      rx_start: true
+      modulation: FSK
+
+    remote_receiver:
+      id: rx_id
+      pin:
+        number: GPIO32
+        allow_other_uses: true
+      filter: 5us
+      idle: 5000us
+      buffer_size: 100000b
+      memory_blocks: 8
+      on_raw:
+        then:
+          - lambda: |-
+              ESP_LOGD("lambda", "Received raw data with length %d", x.size());

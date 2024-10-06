@@ -3,21 +3,24 @@ import esphome.codegen as cg
 from esphome.components import spi
 import esphome.config_validation as cv
 from esphome.const import CONF_FREQUENCY, CONF_ID
+from esphome.core import CORE, TimePeriod
 
 CODEOWNERS = ["@swoboda1337"]
 DEPENDENCIES = ["spi"]
 
 CONF_PA_POWER = "pa_power"
 CONF_PA_PIN = "pa_pin"
+CONF_DIO0_PIN = "dio0_pin"
+CONF_DIO2_PIN = "dio2_pin"
 CONF_NSS_PIN = "nss_pin"
 CONF_RST_PIN = "rst_pin"
 CONF_MODULATION = "modulation"
 CONF_RX_FLOOR = "rx_floor"
 CONF_RX_START = "rx_start"
 CONF_RX_BANDWIDTH = "rx_bandwidth"
+CONF_RX_DURATION = "rx_duration"
 CONF_FSK_FDEV = "fsk_fdev"
 CONF_FSK_RAMP = "fsk_ramp"
-CONF_FSK_SHAPING = "fsk_shaping"
 
 sx127x_ns = cg.esphome_ns.namespace("sx127x")
 SX127x = sx127x_ns.class_("SX127x", cg.Component, spi.SPIDevice)
@@ -29,13 +32,6 @@ SX127xPaRamp = sx127x_ns.enum("SX127xPaRamp")
 PA_PIN = {
     "RFO": SX127xPaConfig.PA_PIN_RFO,
     "BOOST": SX127xPaConfig.PA_PIN_BOOST,
-}
-
-SHAPING = {
-    "BT_0_3": SX127xPaRamp.SHAPING_BT_0_3,
-    "BT_0_5": SX127xPaRamp.SHAPING_BT_0_5,
-    "BT_1_0": SX127xPaRamp.SHAPING_BT_1_0,
-    "NONE": SX127xPaRamp.SHAPING_NONE,
 }
 
 RAMP = {
@@ -89,16 +85,21 @@ RX_BW = {
 CONFIG_SCHEMA = cv.Schema(
     {
         cv.GenerateID(): cv.declare_id(SX127x),
+        cv.Optional(CONF_DIO0_PIN): pins.internal_gpio_input_pin_schema,
+        cv.Optional(CONF_DIO2_PIN): pins.internal_gpio_input_pin_schema,
         cv.Required(CONF_RST_PIN): pins.internal_gpio_output_pin_schema,
         cv.Required(CONF_NSS_PIN): pins.internal_gpio_output_pin_schema,
         cv.Required(CONF_FREQUENCY): cv.int_range(min=137000000, max=1020000000),
         cv.Required(CONF_MODULATION): cv.enum(MOD),
         cv.Optional(CONF_FSK_FDEV, default=5000): cv.int_range(min=0, max=100000),
         cv.Optional(CONF_FSK_RAMP, default="40us"): cv.enum(RAMP),
-        cv.Optional(CONF_FSK_SHAPING, default="NONE"): cv.enum(SHAPING),
         cv.Optional(CONF_RX_FLOOR, default=-94): cv.float_range(min=-128, max=-1),
         cv.Optional(CONF_RX_START, default=True): cv.boolean,
         cv.Optional(CONF_RX_BANDWIDTH, default="50_0kHz"): cv.enum(RX_BW),
+        cv.Optional(CONF_RX_DURATION, default="100ms"): cv.All(
+            cv.positive_time_period_microseconds,
+            cv.Range(max=TimePeriod(microseconds=1000000000)),
+        ),
         cv.Optional(CONF_PA_PIN, default="BOOST"): cv.enum(PA_PIN),
         cv.Optional(CONF_PA_POWER, default=17): cv.int_range(min=0, max=17),
     }
@@ -109,6 +110,12 @@ async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
     await cg.register_component(var, config)
     await spi.register_spi_device(var, config)
+    if CONF_DIO0_PIN in config:
+        dio0_pin = await cg.gpio_pin_expression(config[CONF_DIO0_PIN])
+        cg.add(var.set_dio0_pin(dio0_pin))
+    if CONF_DIO2_PIN in config:
+        dio2_pin = await cg.gpio_pin_expression(config[CONF_DIO2_PIN])
+        cg.add(var.set_dio2_pin(dio2_pin))
     rst_pin = await cg.gpio_pin_expression(config[CONF_RST_PIN])
     cg.add(var.set_rst_pin(rst_pin))
     nss_pin = await cg.gpio_pin_expression(config[CONF_NSS_PIN])
@@ -118,8 +125,8 @@ async def to_code(config):
     cg.add(var.set_rx_floor(config[CONF_RX_FLOOR]))
     cg.add(var.set_rx_start(config[CONF_RX_START]))
     cg.add(var.set_rx_bandwidth(config[CONF_RX_BANDWIDTH]))
+    cg.add(var.set_rx_duration(config[CONF_RX_DURATION]))
     cg.add(var.set_pa_pin(config[CONF_PA_PIN]))
     cg.add(var.set_pa_power(config[CONF_PA_POWER]))
     cg.add(var.set_fsk_fdev(config[CONF_FSK_FDEV]))
     cg.add(var.set_fsk_ramp(config[CONF_FSK_RAMP]))
-    cg.add(var.set_fsk_shaping(config[CONF_FSK_SHAPING]))

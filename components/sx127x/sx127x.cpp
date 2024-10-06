@@ -7,6 +7,14 @@ namespace sx127x {
 
 static const char *const TAG = "sx127x";
 
+void IRAM_ATTR HOT SX127xStore::gpio_intr(SX127xStore *arg) {
+  if (arg->dio2_valid) {
+    arg->dio2_pin.pin_mode(gpio::FLAG_INPUT);
+  }
+  arg->dio0_micros = micros();
+  arg->dio0_irq = true;
+}
+
 uint8_t SX127x::read_register_(uint8_t reg) { return this->single_transfer_((uint8_t) reg & 0x7f, 0x00); }
 
 void SX127x::write_register_(uint8_t reg, uint8_t value) { this->single_transfer_((uint8_t) reg | 0x80, value); }
@@ -32,6 +40,20 @@ void SX127x::setup() {
   // setup reset
   this->rst_pin_->setup();
 
+  // setup dio0
+  if(this->dio0_pin_) {
+    this->dio0_pin_->setup();
+    this->dio0_pin_->attach_interrupt(SX127xStore::gpio_intr, &this->store_, gpio::INTERRUPT_RISING_EDGE);
+  }
+
+  // setup dio2
+  if(this->dio2_pin_) {
+    this->dio2_pin_->setup();
+    this->dio2_pin_->pin_mode(gpio::FLAG_OPEN_DRAIN);
+    this->store_.dio2_pin = this->dio2_pin_->to_isr();
+    this->store_.dio2_valid = true;
+  }
+
   // start spi
   this->spi_setup();
 
@@ -53,7 +75,7 @@ void SX127x::configure() {
   }
 
   // set modulation and make sure transceiver is in sleep mode
-  this->write_register_(REG_OP_MODE, this->modulation_ | MODE_LF_ON | MODE_SLEEP);
+  this->write_register_(REG_OP_MODE, this->modulation_ | MODE_SLEEP);
   delay(1);
 
   // set freq
@@ -70,6 +92,18 @@ void SX127x::configure() {
   // set the channel bw
   this->write_register_(REG_RX_BW, this->rx_bandwidth_);
 
+  // configure rx, afc and dio mapping
+  if (this->modulation_ == MOD_FSK) {
+    this->write_register_(REG_RX_CONFIG, AFC_AUTO_ON | AGC_AUTO_ON | TRIGGER_RSSI);
+    this->write_register_(REG_AFC_FEI, AFC_AUTO_CLEAR_ON);
+    this->write_register_(REG_DIO_MAPPING1, 0x40);
+    this->write_register_(REG_DIO_MAPPING2, 0x00);
+  } else {
+    this->write_register_(REG_RX_CONFIG, AGC_AUTO_ON | TRIGGER_NONE);
+    this->write_register_(REG_DIO_MAPPING1, 0xC0);
+    this->write_register_(REG_DIO_MAPPING2, 0x00);
+  }
+
   // config pa
   if (this->pa_pin_ == PA_PIN_BOOST) {
     this->pa_power_ = std::max(this->pa_power_, (uint32_t) 2);
@@ -79,11 +113,7 @@ void SX127x::configure() {
     this->pa_power_ = std::min(this->pa_power_, (uint32_t) 14);
     this->write_register_(REG_PA_CONFIG, (this->pa_power_ - 0) | this->pa_pin_ | PA_MAX_POWER);
   }
-  if (this->modulation_ == MOD_FSK) {
-    this->write_register_(REG_PA_RAMP, this->fsk_ramp_ | this->fsk_shaping_);
-  } else {
-    this->write_register_(REG_PA_RAMP, this->fsk_ramp_);
-  }
+  this->write_register_(REG_PA_RAMP, this->fsk_ramp_);
 
   // disable packet mode
   this->write_register_(REG_PACKET_CONFIG_1, 0x00);
@@ -94,8 +124,16 @@ void SX127x::configure() {
   this->write_register_(REG_OOK_PEAK, OOK_THRESH_STEP_0_5 | OOK_THRESH_PEAK);
   this->write_register_(REG_OOK_AVG, OOK_THRESH_DEC_1_8);
 
-  // set ook floor
-  this->write_register_(REG_OOK_FIX, 256 + int(this->rx_floor_ * 2.0));
+  // set rx floor
+  if (this->modulation_ == MOD_OOK) {
+    this->write_register_(REG_OOK_FIX, 256 + int(this->rx_floor_ * 2.0));
+    this->write_register_(REG_RSSI_THRESH, 0xFF);
+  } else {
+    this->write_register_(REG_RSSI_THRESH, std::abs(int(this->rx_floor_ * 2.0)));
+  }
+
+  // clear irq flag
+  this->store_.dio0_irq = false;
 
   // enable standby mode
   this->set_mode_standby();
@@ -108,18 +146,41 @@ void SX127x::configure() {
   }
 }
 
-void SX127x::set_mode_standby() { this->write_register_(REG_OP_MODE, this->modulation_ | MODE_LF_ON | MODE_STDBY); }
+void SX127x::loop()
+{
+  // wait until rx duration expires then reset rx and change dio2 mode to avoid overloading
+  // remote receiver with too much noise
+  if (this->store_.dio0_irq && (micros() - this->store_.dio0_micros) >= this->rx_duration_) {
+    this->store_.dio0_irq = false;
+    if (this->dio2_pin_) {
+      this->dio2_pin_->pin_mode(gpio::FLAG_OPEN_DRAIN);
+    }
+    this->write_register_(REG_RX_CONFIG, AFC_AUTO_ON | AGC_AUTO_ON | TRIGGER_RSSI | RESTART_WITH_LOCK);
+  }
+}
+
+void SX127x::set_mode_standby() { this->write_register_(REG_OP_MODE, this->modulation_ | MODE_STDBY); }
 
 void SX127x::set_mode_rx() {
-  this->write_register_(REG_OP_MODE, this->modulation_ | MODE_LF_ON | MODE_RX_FS);
+  if (this->dio2_pin_) {
+    this->write_register_(REG_OP_MODE, this->modulation_ | MODE_STDBY);
+    delay(1);
+    this->dio2_pin_->pin_mode(this->modulation_ == MOD_OOK ? gpio::FLAG_INPUT : gpio::FLAG_OPEN_DRAIN);
+  }
+  this->write_register_(REG_OP_MODE, this->modulation_ | MODE_RX_FS);
   delay(1);
-  this->write_register_(REG_OP_MODE, this->modulation_ | MODE_LF_ON | MODE_RX);
+  this->write_register_(REG_OP_MODE, this->modulation_ | MODE_RX);
 }
 
 void SX127x::set_mode_tx() {
-  this->write_register_(REG_OP_MODE, this->modulation_ | MODE_LF_ON | MODE_TX_FS);
+  if (this->dio2_pin_) {
+    this->write_register_(REG_OP_MODE, this->modulation_ | MODE_STDBY);
+    delay(1);
+    this->dio2_pin_->pin_mode(gpio::FLAG_OUTPUT);
+  }
+  this->write_register_(REG_OP_MODE, this->modulation_ | MODE_TX_FS);
   delay(1);
-  this->write_register_(REG_OP_MODE, this->modulation_ | MODE_LF_ON | MODE_TX);
+  this->write_register_(REG_OP_MODE, this->modulation_ | MODE_TX);
 }
 
 void SX127x::dump_config() {
@@ -130,24 +191,18 @@ void SX127x::dump_config() {
   ESP_LOGCONFIG(TAG, "SX127x:");
   LOG_PIN("  NSS Pin: ", this->nss_pin_);
   LOG_PIN("  RST Pin: ", this->rst_pin_);
+  LOG_PIN("  DIO0 Pin: ", this->dio0_pin_);
+  LOG_PIN("  DIO2 Pin: ", this->dio2_pin_);
   ESP_LOGCONFIG(TAG, "  PA Pin: %s", this->pa_pin_ == PA_PIN_BOOST ? "BOOST" : "RFO");
   ESP_LOGCONFIG(TAG, "  PA Power: %" PRIu32 " dBm", this->pa_power_);
   ESP_LOGCONFIG(TAG, "  Frequency: %f MHz", (float) this->frequency_ / 1000000);
   ESP_LOGCONFIG(TAG, "  Modulation: %s", this->modulation_ == MOD_FSK ? "FSK" : "OOK");
+  ESP_LOGCONFIG(TAG, "  Rx Duration: %" PRIu32 " us", this->rx_duration_);
   ESP_LOGCONFIG(TAG, "  Rx Bandwidth: %.1f kHz", (float) rx_bw / 1000);
   ESP_LOGCONFIG(TAG, "  Rx Start: %s", this->rx_start_ ? "true" : "false");
   ESP_LOGCONFIG(TAG, "  Rx Floor: %.1f dBm", this->rx_floor_);
   ESP_LOGCONFIG(TAG, "  FSK Fdev: %" PRIu32 " Hz", this->fsk_fdev_);
   ESP_LOGCONFIG(TAG, "  FSK Ramp: %" PRIu16 " us", RAMP_LUT[this->fsk_ramp_]);
-  if (this->fsk_shaping_ == SHAPING_BT_1_0) {
-    ESP_LOGCONFIG(TAG, "  FSK Shaping: BT_1_0");
-  } else if (this->fsk_shaping_ == SHAPING_BT_0_5) {
-    ESP_LOGCONFIG(TAG, "  FSK Shaping: BT_0_5");
-  } else if (this->fsk_shaping_ == SHAPING_BT_0_3) {
-    ESP_LOGCONFIG(TAG, "  FSK Shaping: BT_0_3");
-  } else {
-    ESP_LOGCONFIG(TAG, "  FSK Shaping: NONE");
-  }
   if (this->is_failed()) {
     ESP_LOGE(TAG, "Configuring SX127x failed");
   }
