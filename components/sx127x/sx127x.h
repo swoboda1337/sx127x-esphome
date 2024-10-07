@@ -7,6 +7,8 @@ namespace sx127x {
 
 enum SX127xReg : uint8_t {
   REG_OP_MODE = 0x01,
+  REG_BITRATE_MSB = 0x02,
+  REG_BITRATE_LSB = 0x03,
   REG_FDEV_MSB = 0x04,
   REG_FDEV_LSB = 0x05,
   REG_FRF_MSB = 0x06,
@@ -149,6 +151,7 @@ class SX127x : public Component,
   void set_rst_pin(InternalGPIOPin *rst_pin) { this->rst_pin_ = rst_pin; }
   void set_nss_pin(InternalGPIOPin *nss_pin) { this->nss_pin_ = nss_pin; }
   void set_frequency(uint32_t frequency) { this->frequency_ = frequency; }
+  void set_bitrate(uint32_t bitrate) { this->bitrate_ = bitrate; }
   void set_modulation(SX127xOpMode modulation) { this->modulation_ = modulation; }
   void set_fsk_ramp(SX127xPaRamp ramp) { this->fsk_ramp_ = ramp; }
   void set_fsk_fdev(uint32_t fdev) { this->fsk_fdev_ = fdev; }
@@ -178,6 +181,7 @@ class SX127x : public Component,
   SX127xPaRamp fsk_ramp_;
   uint32_t fsk_fdev_;
   uint32_t frequency_;
+  uint32_t bitrate_;
   uint32_t rx_duration_;
   uint32_t pa_power_;
   float rx_floor_;
