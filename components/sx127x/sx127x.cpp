@@ -106,12 +106,12 @@ void SX127x::configure() {
   if (this->modulation_ == MOD_FSK) {
     this->write_register_(REG_RX_CONFIG, AFC_AUTO_ON | AGC_AUTO_ON | TRIGGER_RSSI);
     this->write_register_(REG_AFC_FEI, AFC_AUTO_CLEAR_ON);
-    this->write_register_(REG_DIO_MAPPING1, 0x40);
-    this->write_register_(REG_DIO_MAPPING2, 0x00);
+    this->write_register_(REG_DIO_MAPPING1, DIO0_MAPPING_01);
+    this->write_register_(REG_DIO_MAPPING2, MAP_RSSI_INT);
   } else {
     this->write_register_(REG_RX_CONFIG, AGC_AUTO_ON | TRIGGER_NONE);
-    this->write_register_(REG_DIO_MAPPING1, 0xC0);
-    this->write_register_(REG_DIO_MAPPING2, 0x00);
+    this->write_register_(REG_DIO_MAPPING1, DIO0_MAPPING_11);
+    this->write_register_(REG_DIO_MAPPING2, MAP_RSSI_INT);
   }
 
   // config pa
@@ -135,12 +135,8 @@ void SX127x::configure() {
   this->write_register_(REG_OOK_AVG, OOK_THRESH_DEC_1_8);
 
   // set rx floor
-  if (this->modulation_ == MOD_OOK) {
-    this->write_register_(REG_OOK_FIX, 256 + int(this->rx_floor_ * 2.0));
-    this->write_register_(REG_RSSI_THRESH, 0xFF);
-  } else {
-    this->write_register_(REG_RSSI_THRESH, std::abs(int(this->rx_floor_ * 2.0)));
-  }
+  this->write_register_(REG_OOK_FIX, 256 + int(this->rx_floor_ * 2.0));
+  this->write_register_(REG_RSSI_THRESH, std::abs(int(this->rx_floor_ * 2.0)));
 
   // clear irq flag
   this->store_.dio0_irq = false;

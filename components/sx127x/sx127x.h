@@ -58,6 +58,26 @@ enum SX127xOpMode : uint8_t {
   MODE_SLEEP = 0x00
 };
 
+enum SX127xDioMapping1 : uint8_t {
+  DIO0_MAPPING_00 = 0x00,
+  DIO0_MAPPING_01 = 0x40,
+  DIO0_MAPPING_10 = 0x80,
+  DIO0_MAPPING_11 = 0xC0,
+  DIO1_MAPPING_00 = 0x00,
+  DIO1_MAPPING_01 = 0x10,
+  DIO1_MAPPING_10 = 0x20,
+  DIO1_MAPPING_11 = 0x30,
+  DIO2_MAPPING_00 = 0x00,
+  DIO2_MAPPING_01 = 0x04,
+  DIO2_MAPPING_10 = 0x08,
+  DIO2_MAPPING_11 = 0x0C,
+};
+
+enum SX127xDioMapping2 : uint8_t {
+  MAP_PREAMBLE_INT = 0x01,
+  MAP_RSSI_INT = 0x00,
+};
+
 enum SX127xOokPeak : uint8_t {
   BIT_SYNC_ON = 0x20,
   BIT_SYNC_OFF = 0x00,
