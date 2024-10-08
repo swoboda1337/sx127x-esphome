@@ -25,6 +25,7 @@ Receiver example to use in ESPHome, timing data is read by remote receiver from 
       rst_pin: GPIO23
       frequency: 433920000
       modulation: OOK
+      bitrate: 4800
       rx_floor: -90
       rx_bandwidth: 50_0kHz
 
