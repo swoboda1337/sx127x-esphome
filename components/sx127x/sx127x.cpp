@@ -129,8 +129,17 @@ void SX127x::configure() {
   this->write_register_(REG_PACKET_CONFIG_1, 0x00);
   this->write_register_(REG_PACKET_CONFIG_2, 0x00);
 
-  // disable bit synchronizer, config sync generation and setup threshold
-  this->write_register_(REG_SYNC_CONFIG, 0x00);
+  // config bit synchronizer
+  if (this->sync_value_.size() > 0) {
+    this->write_register_(REG_SYNC_CONFIG, AUTO_RESTART_PLL_LOCK | SYNC_ON | (this->sync_value_.size() - 1));
+    for (uint32_t i = 0; i < this->sync_value_.size(); i++) {
+      this->write_register_(REG_SYNC_CONFIG + i + 1, this->sync_value_[0]);
+    }
+  } else {
+    this->write_register_(REG_SYNC_CONFIG, 0x00);
+  }
+
+  // config sync generation and setup ook threshold
   this->write_register_(REG_OOK_PEAK, bit_sync | OOK_THRESH_STEP_0_5 | OOK_THRESH_PEAK);
   this->write_register_(REG_OOK_AVG, OOK_THRESH_DEC_1_8);
 
@@ -161,7 +170,7 @@ void SX127x::loop()
     if (this->dio2_pin_) {
       this->dio2_pin_->pin_mode(gpio::FLAG_OPEN_DRAIN);
     }
-    this->write_register_(REG_RX_CONFIG, AFC_AUTO_ON | AGC_AUTO_ON | TRIGGER_RSSI | RESTART_WITH_LOCK);
+    this->write_register_(REG_RX_CONFIG, AFC_AUTO_ON | AGC_AUTO_ON | TRIGGER_RSSI | RESTART_PLL_LOCK);
   }
 }
 
@@ -208,6 +217,7 @@ void SX127x::dump_config() {
   ESP_LOGCONFIG(TAG, "  Rx Bandwidth: %.1f kHz", (float) rx_bw / 1000);
   ESP_LOGCONFIG(TAG, "  Rx Start: %s", this->rx_start_ ? "true" : "false");
   ESP_LOGCONFIG(TAG, "  Rx Floor: %.1f dBm", this->rx_floor_);
+  ESP_LOGCONFIG(TAG, "  Sync Value: 0x%s", format_hex(this->sync_value_).c_str());
   ESP_LOGCONFIG(TAG, "  FSK Fdev: %" PRIu32 " Hz", this->fsk_fdev_);
   ESP_LOGCONFIG(TAG, "  FSK Ramp: %" PRIu16 " us", RAMP_LUT[this->fsk_ramp_]);
   if (this->is_failed()) {

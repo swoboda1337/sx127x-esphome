@@ -24,6 +24,14 @@ enum SX127xReg : uint8_t {
   REG_OOK_AVG = 0x16,
   REG_AFC_FEI = 0x1a,
   REG_SYNC_CONFIG = 0x27,
+  REG_SYNC_VALUE1 = 0x28,
+  REG_SYNC_VALUE2 = 0x29,
+  REG_SYNC_VALUE3 = 0x2A,
+  REG_SYNC_VALUE4 = 0x2B,
+  REG_SYNC_VALUE5 = 0x2C,
+  REG_SYNC_VALUE6 = 0x2D,
+  REG_SYNC_VALUE7 = 0x2E,
+  REG_SYNC_VALUE8 = 0x2F,
   REG_PACKET_CONFIG_1 = 0x30,
   REG_PACKET_CONFIG_2 = 0x31,
   REG_DIO_MAPPING1 = 0x40,
@@ -32,8 +40,8 @@ enum SX127xReg : uint8_t {
 };
 
 enum SX127xRxConfig : uint8_t {
-  RESTART_WITHOUT_LOCK = 0x40,
-  RESTART_WITH_LOCK = 0x20,
+  RESTART_NO_LOCK = 0x40,
+  RESTART_PLL_LOCK = 0x20,
   AFC_AUTO_ON = 0x10,
   AGC_AUTO_ON = 0x08,
   TRIGGER_NONE = 0x00,
@@ -44,6 +52,15 @@ enum SX127xRxConfig : uint8_t {
 
 enum SX127xAfcFei : uint8_t {
   AFC_AUTO_CLEAR_ON = 0x01,
+};
+
+enum SX127xSyncConfig : uint8_t {
+  AUTO_RESTART_OFF = 0x00,
+  AUTO_RESTART_NO_LOCK = 0x80,
+  AUTO_RESTART_PLL_LOCK = 0x40,
+  PREAMBLE_AA= 0x00,
+  PREAMBLE_55= 0x20,
+  SYNC_ON = 0x10
 };
 
 enum SX127xOpMode : uint8_t {
@@ -181,6 +198,7 @@ class SX127x : public Component,
   void set_rx_duration(uint32_t duration) { this->rx_duration_ = duration; }
   void set_pa_pin(SX127xPaConfig pin) { this->pa_pin_ = pin; }
   void set_pa_power(uint32_t power) { this->pa_power_ = power; }
+  void set_sync_value(const std::vector<uint8_t> &sync_value) { this->sync_value_ = sync_value; }
   void set_mode_standby();
   void set_mode_tx();
   void set_mode_rx();
@@ -190,6 +208,7 @@ class SX127x : public Component,
   void write_register_(uint8_t reg, uint8_t value);
   uint8_t single_transfer_(uint8_t reg, uint8_t value);
   uint8_t read_register_(uint8_t reg);
+  std::vector<uint8_t> sync_value_;
   InternalGPIOPin *dio0_pin_{nullptr};
   InternalGPIOPin *dio2_pin_{nullptr};
   InternalGPIOPin *rst_pin_{nullptr};

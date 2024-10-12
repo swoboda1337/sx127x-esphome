@@ -20,6 +20,7 @@ CONF_RX_START = "rx_start"
 CONF_RX_BANDWIDTH = "rx_bandwidth"
 CONF_RX_DURATION = "rx_duration"
 CONF_BITRATE = "bitrate"
+CONF_SYNC_VALUE = "sync_value"
 CONF_FSK_FDEV = "fsk_fdev"
 CONF_FSK_RAMP = "fsk_ramp"
 
@@ -95,6 +96,7 @@ CONFIG_SCHEMA = cv.Schema(
         cv.Optional(CONF_BITRATE, default=0): cv.int_range(min=0, max=300000),
         cv.Optional(CONF_FSK_FDEV, default=5000): cv.int_range(min=0, max=100000),
         cv.Optional(CONF_FSK_RAMP, default="40us"): cv.enum(RAMP),
+        cv.Optional(CONF_SYNC_VALUE, default=[]): cv.ensure_list(cv.hex_uint8_t),
         cv.Optional(CONF_RX_FLOOR, default=-94): cv.float_range(min=-128, max=-1),
         cv.Optional(CONF_RX_START, default=True): cv.boolean,
         cv.Optional(CONF_RX_BANDWIDTH, default="50_0kHz"): cv.enum(RX_BW),
@@ -125,6 +127,7 @@ async def to_code(config):
     cg.add(var.set_frequency(config[CONF_FREQUENCY]))
     cg.add(var.set_modulation(config[CONF_MODULATION]))
     cg.add(var.set_bitrate(config[CONF_BITRATE]))
+    cg.add(var.set_sync_value(config[CONF_SYNC_VALUE]))
     cg.add(var.set_rx_floor(config[CONF_RX_FLOOR]))
     cg.add(var.set_rx_start(config[CONF_RX_START]))
     cg.add(var.set_rx_bandwidth(config[CONF_RX_BANDWIDTH]))
