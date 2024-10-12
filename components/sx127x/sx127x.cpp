@@ -133,7 +133,7 @@ void SX127x::configure() {
   if (this->sync_value_.size() > 0) {
     this->write_register_(REG_SYNC_CONFIG, AUTO_RESTART_PLL_LOCK | SYNC_ON | (this->sync_value_.size() - 1));
     for (uint32_t i = 0; i < this->sync_value_.size(); i++) {
-      this->write_register_(REG_SYNC_CONFIG + i + 1, this->sync_value_[0]);
+      this->write_register_(REG_SYNC_VALUE1 + i, this->sync_value_[0]);
     }
   } else {
     this->write_register_(REG_SYNC_CONFIG, 0x00);
