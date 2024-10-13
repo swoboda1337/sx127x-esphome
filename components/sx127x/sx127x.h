@@ -61,7 +61,8 @@ enum SX127xSyncConfig : uint8_t {
   AUTO_RESTART_PLL_LOCK = 0x40,
   PREAMBLE_AA= 0x00,
   PREAMBLE_55= 0x20,
-  SYNC_ON = 0x10
+  SYNC_OFF = 0x00,
+  SYNC_ON = 0x10,
 };
 
 enum SX127xOpMode : uint8_t {
