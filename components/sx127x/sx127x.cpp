@@ -131,12 +131,23 @@ void SX127x::configure() {
 
   // config bit synchronizer
   if (this->sync_value_.size() > 0) {
-    this->write_register_(REG_SYNC_CONFIG, AUTO_RESTART_PLL_LOCK | SYNC_ON | (this->sync_value_.size() - 1));
+    uint8_t polarity = (this->preamble_polarity_ == 0xAA) ? PREAMBLE_AA : PREAMBLE_55;
+    uint8_t size = this->sync_value_.size() - 1;
+    this->write_register_(REG_SYNC_CONFIG, AUTO_RESTART_PLL_LOCK | SYNC_ON | polarity | size);
     for (uint32_t i = 0; i < this->sync_value_.size(); i++) {
       this->write_register_(REG_SYNC_VALUE1 + i, this->sync_value_[0]);
     }
   } else {
     this->write_register_(REG_SYNC_CONFIG, 0x00);
+  }
+
+  // config preamble detector
+  if (this->preamble_size_ > 0 && this->preamble_size_ < 4) {
+    uint8_t size = (this->preamble_size_ - 1) << PREAMBLE_BYTES_SHIFT;
+    uint8_t errors = this->preamble_errors_;
+    this->write_register_(REG_PREAMBLE_DETECT, PREAMBLE_DETECTOR_ON | size | errors);
+  } else {
+    this->write_register_(REG_PREAMBLE_DETECT, PREAMBLE_DETECTOR_OFF);
   }
 
   // config sync generation and setup ook threshold
@@ -217,6 +228,9 @@ void SX127x::dump_config() {
   ESP_LOGCONFIG(TAG, "  Rx Bandwidth: %.1f kHz", (float) rx_bw / 1000);
   ESP_LOGCONFIG(TAG, "  Rx Start: %s", this->rx_start_ ? "true" : "false");
   ESP_LOGCONFIG(TAG, "  Rx Floor: %.1f dBm", this->rx_floor_);
+  ESP_LOGCONFIG(TAG, "  Preamble Polarity: 0x%X", this->preamble_polarity_);
+  ESP_LOGCONFIG(TAG, "  Preamble Size: %" PRIu8, this->preamble_size_);
+  ESP_LOGCONFIG(TAG, "  Preamble Errors: %" PRIu8, this->preamble_errors_);
   ESP_LOGCONFIG(TAG, "  Sync Value: 0x%s", format_hex(this->sync_value_).c_str());
   ESP_LOGCONFIG(TAG, "  FSK Fdev: %" PRIu32 " Hz", this->fsk_fdev_);
   ESP_LOGCONFIG(TAG, "  FSK Ramp: %" PRIu16 " us", RAMP_LUT[this->fsk_ramp_]);

@@ -22,7 +22,8 @@ enum SX127xReg : uint8_t {
   REG_OOK_PEAK = 0x14,
   REG_OOK_FIX = 0x15,
   REG_OOK_AVG = 0x16,
-  REG_AFC_FEI = 0x1a,
+  REG_AFC_FEI = 0x1A,
+  REG_PREAMBLE_DETECT = 0x1F,
   REG_SYNC_CONFIG = 0x27,
   REG_SYNC_VALUE1 = 0x28,
   REG_SYNC_VALUE2 = 0x29,
@@ -46,7 +47,7 @@ enum SX127xRxConfig : uint8_t {
   AGC_AUTO_ON = 0x08,
   TRIGGER_NONE = 0x00,
   TRIGGER_RSSI = 0x01,
-  TRIGGER_PREABLE = 0x06,
+  TRIGGER_PREAMBLE = 0x06,
   TRIGGER_ALL = 0x07,
 };
 
@@ -88,6 +89,15 @@ enum SX127xDioMapping1 : uint8_t {
   DIO2_MAPPING_01 = 0x04,
   DIO2_MAPPING_10 = 0x08,
   DIO2_MAPPING_11 = 0x0C,
+};
+
+enum SX127xPreambleDetect : uint8_t {
+  PREAMBLE_DETECTOR_ON = 0x80,
+  PREAMBLE_DETECTOR_OFF = 0x00,
+  PREAMBLE_BYTES_1 = 0x00,
+  PREAMBLE_BYTES_2 = 0x20,
+  PREAMBLE_BYTES_3 = 0x40,
+  PREAMBLE_BYTES_SHIFT = 0x05,
 };
 
 enum SX127xDioMapping2 : uint8_t {
@@ -199,6 +209,9 @@ class SX127x : public Component,
   void set_pa_pin(SX127xPaConfig pin) { this->pa_pin_ = pin; }
   void set_pa_power(uint32_t power) { this->pa_power_ = power; }
   void set_sync_value(const std::vector<uint8_t> &sync_value) { this->sync_value_ = sync_value; }
+  void set_preamble_polarity(uint8_t preamble_polarity) { this->preamble_polarity_ = preamble_polarity; }
+  void set_preamble_size(uint8_t preamble_size) { this->preamble_size_ = preamble_size; }
+  void set_preamble_errors(uint8_t preamble_errors) { this->preamble_errors_ = preamble_errors; }
   void set_mode_standby();
   void set_mode_tx();
   void set_mode_rx();
@@ -223,6 +236,9 @@ class SX127x : public Component,
   uint32_t bitrate_;
   uint32_t rx_duration_;
   uint32_t pa_power_;
+  uint8_t preamble_polarity_;
+  uint8_t preamble_size_;
+  uint8_t preamble_errors_;
   float rx_floor_;
   bool rx_start_;
 };
