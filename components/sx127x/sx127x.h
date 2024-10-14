@@ -1,7 +1,11 @@
 #pragma once
 
-#include "esphome/core/automation.h"
 #include "esphome/components/spi/spi.h"
+#include "esphome/core/automation.h"
+#include "esphome/core/component.h"
+#include "esphome/core/hal.h"
+#include "esphome/core/log.h"
+#include <vector>
 
 namespace esphome {
 namespace sx127x {
