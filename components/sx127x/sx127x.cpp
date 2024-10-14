@@ -8,7 +8,7 @@ namespace sx127x {
 static const char *const TAG = "sx127x";
 
 void IRAM_ATTR HOT SX127xStore::gpio_intr(SX127xStore *arg) {
-  if (arg->dio2_valid) {
+  if (arg->dio2_toggle) {
     arg->dio2_pin.pin_mode(gpio::FLAG_INPUT);
   }
   arg->dio0_micros = micros();
@@ -51,7 +51,7 @@ void SX127x::setup() {
     this->dio2_pin_->setup();
     this->dio2_pin_->pin_mode(gpio::FLAG_OPEN_DRAIN);
     this->store_.dio2_pin = this->dio2_pin_->to_isr();
-    this->store_.dio2_valid = true;
+    this->store_.dio2_toggle = true;
   }
 
   // start spi
@@ -102,17 +102,38 @@ void SX127x::configure() {
     bit_sync = BIT_SYNC_ON;
   }
 
-  // configure rx, afc and dio mapping
-  if (this->modulation_ == MOD_FSK) {
-    this->write_register_(REG_RX_CONFIG, AFC_AUTO_ON | AGC_AUTO_ON | TRIGGER_RSSI);
-    this->write_register_(REG_AFC_FEI, AFC_AUTO_CLEAR_ON);
+  // configure dio mapping
+  if (this->payload_length_ > 0) {
+    this->write_register_(REG_DIO_MAPPING1, DIO0_MAPPING_00);
+  } else if (this->rx_duration_ > 0) {
     this->write_register_(REG_DIO_MAPPING1, DIO0_MAPPING_01);
-    this->write_register_(REG_DIO_MAPPING2, MAP_RSSI_INT);
   } else {
-    this->write_register_(REG_RX_CONFIG, AGC_AUTO_ON | TRIGGER_NONE);
     this->write_register_(REG_DIO_MAPPING1, DIO0_MAPPING_11);
+  }
+  if (this->preamble_size_ > 0) {
+    this->write_register_(REG_DIO_MAPPING2, MAP_PREAMBLE_INT);
+  } else {
     this->write_register_(REG_DIO_MAPPING2, MAP_RSSI_INT);
   }
+
+  // configure rx and afc
+  uint8_t trigger = (this->preamble_size_ > 0) ? TRIGGER_PREAMBLE : TRIGGER_RSSI;
+  this->write_register_(REG_AFC_FEI, AFC_AUTO_CLEAR_ON);
+  if (this->modulation_ == MOD_FSK) {
+    this->rx_config_ = AFC_AUTO_ON | AGC_AUTO_ON | trigger;
+  } else {
+    this->rx_config_ = AGC_AUTO_ON | trigger;
+  }
+  this->write_register_(REG_RX_CONFIG, this->rx_config_);
+
+  // configure packet mode
+  this->write_register_(REG_PACKET_CONFIG_1, 0x00);
+  if (this->payload_length_ > 0) {
+    this->write_register_(REG_PACKET_CONFIG_2, PACKET_MODE);
+  } else {
+    this->write_register_(REG_PACKET_CONFIG_2, CONTINUOUS_MODE);
+  }
+  this->write_register_(REG_PAYLOAD_LENGTH, this->payload_length_);
 
   // config pa
   if (this->pa_pin_ == PA_PIN_BOOST) {
@@ -124,10 +145,6 @@ void SX127x::configure() {
     this->write_register_(REG_PA_CONFIG, (this->pa_power_ - 0) | this->pa_pin_ | PA_MAX_POWER);
   }
   this->write_register_(REG_PA_RAMP, this->fsk_ramp_);
-
-  // disable packet mode
-  this->write_register_(REG_PACKET_CONFIG_1, 0x00);
-  this->write_register_(REG_PACKET_CONFIG_2, 0x00);
 
   // config bit synchronizer
   if (this->sync_value_.size() > 0) {
@@ -174,14 +191,27 @@ void SX127x::configure() {
 
 void SX127x::loop()
 {
-  // wait until rx duration expires then reset rx and change dio2 mode to avoid overloading
-  // remote receiver with too much noise
-  if (this->store_.dio0_irq && (micros() - this->store_.dio0_micros) >= this->rx_duration_) {
-    this->store_.dio0_irq = false;
-    if (this->dio2_pin_) {
-      this->dio2_pin_->pin_mode(gpio::FLAG_OPEN_DRAIN);
+  if (this->store_.dio0_irq) {
+    if (this->payload_length_ > 0) {
+      // read packet, reset the receiver and call the trigger
+      std::vector<uint8_t> packet;
+      for (uint32_t i = 0; i < this->payload_length_; i++) {
+        packet.push_back(this->read_register_(REG_FIFO));
+      }
+      this->store_.dio0_irq = false;
+      this->write_register_(REG_RX_CONFIG, RESTART_PLL_LOCK | this->rx_config_);
+      this->packet_trigger_->trigger(packet);
+    } else {
+      // wait until rx duration expires then reset rx and change dio2 mode to avoid overloading
+      // remote receiver with too much noise
+      if ((micros() - this->store_.dio0_micros) >= this->rx_duration_) {
+        if (this->dio2_pin_) {
+          this->dio2_pin_->pin_mode(gpio::FLAG_OPEN_DRAIN);
+        }
+      }
+      this->store_.dio0_irq = false;
+      this->write_register_(REG_RX_CONFIG, RESTART_PLL_LOCK | this->rx_config_);
     }
-    this->write_register_(REG_RX_CONFIG, AFC_AUTO_ON | AGC_AUTO_ON | TRIGGER_RSSI | RESTART_PLL_LOCK);
   }
 }
 
@@ -228,10 +258,13 @@ void SX127x::dump_config() {
   ESP_LOGCONFIG(TAG, "  Rx Bandwidth: %.1f kHz", (float) rx_bw / 1000);
   ESP_LOGCONFIG(TAG, "  Rx Start: %s", this->rx_start_ ? "true" : "false");
   ESP_LOGCONFIG(TAG, "  Rx Floor: %.1f dBm", this->rx_floor_);
+  ESP_LOGCONFIG(TAG, "  Payload Length: %" PRIu32, this->payload_length_);
   ESP_LOGCONFIG(TAG, "  Preamble Polarity: 0x%X", this->preamble_polarity_);
   ESP_LOGCONFIG(TAG, "  Preamble Size: %" PRIu8, this->preamble_size_);
   ESP_LOGCONFIG(TAG, "  Preamble Errors: %" PRIu8, this->preamble_errors_);
-  ESP_LOGCONFIG(TAG, "  Sync Value: 0x%s", format_hex(this->sync_value_).c_str());
+  if (this->sync_value_.size() > 0) {
+    ESP_LOGCONFIG(TAG, "  Sync Value: 0x%s", format_hex(this->sync_value_).c_str());
+  }
   ESP_LOGCONFIG(TAG, "  FSK Fdev: %" PRIu32 " Hz", this->fsk_fdev_);
   ESP_LOGCONFIG(TAG, "  FSK Ramp: %" PRIu16 " us", RAMP_LUT[this->fsk_ramp_]);
   if (this->is_failed()) {

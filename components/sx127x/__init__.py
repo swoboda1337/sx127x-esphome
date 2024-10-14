@@ -1,4 +1,4 @@
-from esphome import pins
+from esphome import automation, pins
 import esphome.codegen as cg
 from esphome.components import spi
 import esphome.config_validation as cv
@@ -20,12 +20,14 @@ CONF_RX_START = "rx_start"
 CONF_RX_BANDWIDTH = "rx_bandwidth"
 CONF_RX_DURATION = "rx_duration"
 CONF_BITRATE = "bitrate"
+CONF_PAYLOAD_LENGTH = "payload_length"
 CONF_PREAMBLE_SIZE = "preamble_size"
 CONF_PREAMBLE_POLARITY = "preamble_polarity"
 CONF_PREAMBLE_ERRORS = "preamble_errors"
 CONF_SYNC_VALUE = "sync_value"
 CONF_FSK_FDEV = "fsk_fdev"
 CONF_FSK_RAMP = "fsk_ramp"
+CONF_ON_PACKET = "on_packet"
 
 sx127x_ns = cg.esphome_ns.namespace("sx127x")
 SX127x = sx127x_ns.class_("SX127x", cg.Component, spi.SPIDevice)
@@ -100,18 +102,20 @@ CONFIG_SCHEMA = cv.Schema(
         cv.Optional(CONF_FSK_FDEV, default=5000): cv.int_range(min=0, max=100000),
         cv.Optional(CONF_FSK_RAMP, default="40us"): cv.enum(RAMP),
         cv.Optional(CONF_SYNC_VALUE, default=[]): cv.ensure_list(cv.hex_uint8_t),
+        cv.Optional(CONF_PAYLOAD_LENGTH, default=0): cv.int_range(min=0, max=64),
         cv.Optional(CONF_PREAMBLE_SIZE, default=0): cv.int_range(min=0, max=7),
         cv.Optional(CONF_PREAMBLE_POLARITY, default=0xAA): cv.All(cv.hex_int, cv.one_of(0xAA, 0x55)),
         cv.Optional(CONF_PREAMBLE_ERRORS, default=0): cv.int_range(min=0, max=31),
         cv.Optional(CONF_RX_FLOOR, default=-94): cv.float_range(min=-128, max=-1),
         cv.Optional(CONF_RX_START, default=True): cv.boolean,
         cv.Optional(CONF_RX_BANDWIDTH, default="50_0kHz"): cv.enum(RX_BW),
-        cv.Optional(CONF_RX_DURATION, default="100ms"): cv.All(
+        cv.Optional(CONF_RX_DURATION, default="0ms"): cv.All(
             cv.positive_time_period_microseconds,
             cv.Range(max=TimePeriod(microseconds=1000000000)),
         ),
         cv.Optional(CONF_PA_PIN, default="BOOST"): cv.enum(PA_PIN),
         cv.Optional(CONF_PA_POWER, default=17): cv.int_range(min=0, max=17),
+        cv.Optional(CONF_ON_PACKET): automation.validate_automation(single=True),
     }
 ).extend(spi.spi_device_schema(False, 8e6, "mode0"))
 
@@ -120,6 +124,12 @@ async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
     await cg.register_component(var, config)
     await spi.register_spi_device(var, config)
+    if CONF_ON_PACKET in config:
+        await automation.build_automation(
+            var.get_packet_trigger(),
+            [(cg.std_vector.template(cg.uint8), "x")],
+            config[CONF_ON_PACKET]
+        )
     if CONF_DIO0_PIN in config:
         dio0_pin = await cg.gpio_pin_expression(config[CONF_DIO0_PIN])
         cg.add(var.set_dio0_pin(dio0_pin))
@@ -133,6 +143,7 @@ async def to_code(config):
     cg.add(var.set_frequency(config[CONF_FREQUENCY]))
     cg.add(var.set_modulation(config[CONF_MODULATION]))
     cg.add(var.set_bitrate(config[CONF_BITRATE]))
+    cg.add(var.set_payload_length(config[CONF_PAYLOAD_LENGTH]))
     cg.add(var.set_preamble_size(config[CONF_PREAMBLE_SIZE]))
     cg.add(var.set_preamble_polarity(config[CONF_PREAMBLE_POLARITY]))
     cg.add(var.set_preamble_errors(config[CONF_PREAMBLE_ERRORS]))

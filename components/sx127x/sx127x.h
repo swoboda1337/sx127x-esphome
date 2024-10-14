@@ -6,6 +6,7 @@ namespace esphome {
 namespace sx127x {
 
 enum SX127xReg : uint8_t {
+  REG_FIFO = 0x00,
   REG_OP_MODE = 0x01,
   REG_BITRATE_MSB = 0x02,
   REG_BITRATE_LSB = 0x03,
@@ -35,6 +36,7 @@ enum SX127xReg : uint8_t {
   REG_SYNC_VALUE8 = 0x2F,
   REG_PACKET_CONFIG_1 = 0x30,
   REG_PACKET_CONFIG_2 = 0x31,
+  REG_PAYLOAD_LENGTH = 0x32,
   REG_DIO_MAPPING1 = 0x40,
   REG_DIO_MAPPING2 = 0x41,
   REG_VERSION = 0x42
@@ -133,6 +135,11 @@ enum SX127xOokAvg : uint8_t {
   OOK_THRESH_DEC_1 = 0x00
 };
 
+enum SX127xPacketConfig2 : uint8_t {
+  CONTINUOUS_MODE = 0x00,
+  PACKET_MODE = 0x40,
+};
+
 enum SX127xRxBw : uint8_t {
   RX_BW_2_6 = 0x17,
   RX_BW_3_1 = 0x0F,
@@ -180,7 +187,7 @@ struct SX127xStore {
   static void gpio_intr(SX127xStore *arg);
   uint32_t dio0_micros{0};
   bool dio0_irq{false};
-  bool dio2_valid{false};
+  bool dio2_toggle{false};
   ISRInternalGPIOPin dio2_pin;
 };
 
@@ -210,6 +217,7 @@ class SX127x : public Component,
   void set_pa_pin(SX127xPaConfig pin) { this->pa_pin_ = pin; }
   void set_pa_power(uint32_t power) { this->pa_power_ = power; }
   void set_sync_value(const std::vector<uint8_t> &sync_value) { this->sync_value_ = sync_value; }
+  void set_payload_length(uint8_t payload_length) { this->payload_length_ = payload_length; }
   void set_preamble_polarity(uint8_t preamble_polarity) { this->preamble_polarity_ = preamble_polarity; }
   void set_preamble_size(uint8_t preamble_size) { this->preamble_size_ = preamble_size; }
   void set_preamble_errors(uint8_t preamble_errors) { this->preamble_errors_ = preamble_errors; }
@@ -217,11 +225,13 @@ class SX127x : public Component,
   void set_mode_tx();
   void set_mode_rx();
   void configure();
+  Trigger<std::vector<uint8_t>> *get_packet_trigger() const { return this->packet_trigger_; };
 
  protected:
   void write_register_(uint8_t reg, uint8_t value);
   uint8_t single_transfer_(uint8_t reg, uint8_t value);
   uint8_t read_register_(uint8_t reg);
+  Trigger<std::vector<uint8_t>> *packet_trigger_{new Trigger<std::vector<uint8_t>>()};
   std::vector<uint8_t> sync_value_;
   InternalGPIOPin *dio0_pin_{nullptr};
   InternalGPIOPin *dio2_pin_{nullptr};
@@ -237,9 +247,11 @@ class SX127x : public Component,
   uint32_t bitrate_;
   uint32_t rx_duration_;
   uint32_t pa_power_;
+  uint32_t payload_length_;
   uint8_t preamble_polarity_;
   uint8_t preamble_size_;
   uint8_t preamble_errors_;
+  uint8_t rx_config_;
   float rx_floor_;
   bool rx_start_;
 };
