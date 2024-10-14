@@ -1,5 +1,6 @@
 #pragma once
 
+#include "esphome/core/automation.h"
 #include "esphome/components/spi/spi.h"
 
 namespace esphome {
