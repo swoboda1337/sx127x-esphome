@@ -30,6 +30,8 @@ enum SX127xReg : uint8_t {
   REG_OOK_AVG = 0x16,
   REG_AFC_FEI = 0x1A,
   REG_PREAMBLE_DETECT = 0x1F,
+  REG_PREAMBLE_MSB = 0x25,
+  REG_PREAMBLE_LSB = 0x26,
   REG_SYNC_CONFIG = 0x27,
   REG_SYNC_VALUE1 = 0x28,
   REG_SYNC_VALUE2 = 0x29,
@@ -42,6 +44,7 @@ enum SX127xReg : uint8_t {
   REG_PACKET_CONFIG_1 = 0x30,
   REG_PACKET_CONFIG_2 = 0x31,
   REG_PAYLOAD_LENGTH = 0x32,
+  REG_FIFO_THRESH = 0x35,
   REG_DIO_MAPPING1 = 0x40,
   REG_DIO_MAPPING2 = 0x41,
   REG_VERSION = 0x42
@@ -56,6 +59,11 @@ enum SX127xRxConfig : uint8_t {
   TRIGGER_RSSI = 0x01,
   TRIGGER_PREAMBLE = 0x06,
   TRIGGER_ALL = 0x07,
+};
+
+enum SX127xFifoThresh : uint8_t {
+  TX_START_FIFO_EMPTY = 0x80,
+  TX_START_FIFO_LEVEL = 0x00,
 };
 
 enum SX127xAfcFei : uint8_t {
@@ -190,9 +198,9 @@ enum SX127xPaRamp : uint8_t {
 
 struct SX127xStore {
   static void gpio_intr(SX127xStore *arg);
-  uint32_t dio0_micros{0};
-  bool dio0_irq{false};
-  bool dio2_toggle{false};
+  volatile uint32_t dio0_micros{0};
+  volatile bool dio0_irq{false};
+  volatile bool dio2_toggle{false};
   ISRInternalGPIOPin dio2_pin;
 };
 
@@ -230,9 +238,12 @@ class SX127x : public Component,
   void set_mode_tx();
   void set_mode_rx();
   void configure();
+  void transmit_packet(const std::vector<uint8_t> &packet);
   Trigger<std::vector<uint8_t>> *get_packet_trigger() const { return this->packet_trigger_; };
 
  protected:
+  void write_fifo_(const std::vector<uint8_t> &packet);
+  void read_fifo_(std::vector<uint8_t> &packet);
   void write_register_(uint8_t reg, uint8_t value);
   uint8_t single_transfer_(uint8_t reg, uint8_t value);
   uint8_t read_register_(uint8_t reg);

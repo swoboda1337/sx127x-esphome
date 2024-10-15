@@ -15,7 +15,7 @@ void IRAM_ATTR HOT SX127xStore::gpio_intr(SX127xStore *arg) {
   arg->dio0_irq = true;
 }
 
-uint8_t SX127x::read_register_(uint8_t reg) { return this->single_transfer_((uint8_t) reg & 0x7f, 0x00); }
+uint8_t SX127x::read_register_(uint8_t reg) { return this->single_transfer_((uint8_t) reg & 0x7F, 0x00); }
 
 void SX127x::write_register_(uint8_t reg, uint8_t value) { this->single_transfer_((uint8_t) reg | 0x80, value); }
 
@@ -28,6 +28,28 @@ uint8_t SX127x::single_transfer_(uint8_t reg, uint8_t value) {
   this->nss_pin_->digital_write(true);
   this->delegate_->end_transaction();
   return response;
+}
+
+void SX127x::read_fifo_(std::vector<uint8_t> &packet) {
+  this->delegate_->begin_transaction();
+  this->nss_pin_->digital_write(false);
+  this->delegate_->transfer(REG_FIFO & 0x7F);
+  for (uint32_t i = 0; i < this->payload_length_; i++) {
+    packet.push_back(this->delegate_->transfer(0x00));
+  }
+  this->nss_pin_->digital_write(true);
+  this->delegate_->end_transaction();
+}
+
+void SX127x::write_fifo_(const std::vector<uint8_t> &packet) {
+  this->delegate_->begin_transaction();
+  this->nss_pin_->digital_write(false);
+  this->delegate_->transfer(REG_FIFO | 0x80);
+  for (uint32_t i = 0; i < this->payload_length_; i++) {
+    this->delegate_->transfer(packet[i]);
+  }
+  this->nss_pin_->digital_write(true);
+  this->delegate_->end_transaction();
 }
 
 void SX127x::setup() {
@@ -145,6 +167,7 @@ void SX127x::configure() {
     this->write_register_(REG_PA_CONFIG, (this->pa_power_ - 0) | this->pa_pin_ | PA_MAX_POWER);
   }
   this->write_register_(REG_PA_RAMP, this->fsk_ramp_);
+  this->write_register_(REG_FIFO_THRESH, TX_START_FIFO_EMPTY);
 
   // config bit synchronizer
   if (this->sync_value_.size() > 0) {
@@ -166,6 +189,8 @@ void SX127x::configure() {
   } else {
     this->write_register_(REG_PREAMBLE_DETECT, PREAMBLE_DETECTOR_OFF);
   }
+  this->write_register_(REG_PREAMBLE_MSB, 0);
+  this->write_register_(REG_PREAMBLE_LSB, this->preamble_size_);
 
   // config sync generation and setup ook threshold
   this->write_register_(REG_OOK_PEAK, bit_sync | OOK_THRESH_STEP_0_5 | OOK_THRESH_PEAK);
@@ -189,15 +214,28 @@ void SX127x::configure() {
   }
 }
 
-void SX127x::loop()
-{
+void SX127x::transmit_packet(const std::vector<uint8_t> &packet) {
+  this->write_register_(REG_OP_MODE, this->modulation_ | MODE_STDBY);
+  delay(1);
+  this->write_fifo_(packet);
+  this->write_register_(REG_OP_MODE, this->modulation_ | MODE_TX_FS);
+  delay(1);
+  this->write_register_(REG_OP_MODE, this->modulation_ | MODE_TX);
+  while (!this->store_.dio0_irq);
+  this->write_register_(REG_OP_MODE, this->modulation_ | MODE_STDBY);
+  delay(1);
+  if (this->rx_start_) {
+    this->set_mode_rx();
+    delay(1);
+  }
+}
+
+void SX127x::loop() {
   if (this->store_.dio0_irq) {
     if (this->payload_length_ > 0) {
       // read packet, reset the receiver and call the trigger
       std::vector<uint8_t> packet;
-      for (uint32_t i = 0; i < this->payload_length_; i++) {
-        packet.push_back(this->read_register_(REG_FIFO));
-      }
+      this->read_fifo_(packet);
       this->store_.dio0_irq = false;
       this->write_register_(REG_RX_CONFIG, RESTART_PLL_LOCK | this->rx_config_);
       this->packet_trigger_->trigger(packet);
@@ -208,9 +246,9 @@ void SX127x::loop()
         if (this->dio2_pin_) {
           this->dio2_pin_->pin_mode(gpio::FLAG_OPEN_DRAIN);
         }
+        this->store_.dio0_irq = false;
+        this->write_register_(REG_RX_CONFIG, RESTART_PLL_LOCK | this->rx_config_);
       }
-      this->store_.dio0_irq = false;
-      this->write_register_(REG_RX_CONFIG, RESTART_PLL_LOCK | this->rx_config_);
     }
   }
 }
