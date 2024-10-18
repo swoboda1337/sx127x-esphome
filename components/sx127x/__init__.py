@@ -15,6 +15,7 @@ CONF_DIO2_PIN = "dio2_pin"
 CONF_NSS_PIN = "nss_pin"
 CONF_RST_PIN = "rst_pin"
 CONF_MODULATION = "modulation"
+CONF_SHAPING = "shaping"
 CONF_RX_FLOOR = "rx_floor"
 CONF_RX_START = "rx_start"
 CONF_RX_BANDWIDTH = "rx_bandwidth"
@@ -39,6 +40,15 @@ SX127xPaRamp = sx127x_ns.enum("SX127xPaRamp")
 PA_PIN = {
     "RFO": SX127xPaConfig.PA_PIN_RFO,
     "BOOST": SX127xPaConfig.PA_PIN_BOOST,
+}
+
+SHAPING = {
+    "CUTOFF_BR_X_2": SX127xPaRamp.CUTOFF_BR_X_2,
+    "CUTOFF_BR_X_1": SX127xPaRamp.CUTOFF_BR_X_1,
+    "GAUSSIAN_BT_0_3": SX127xPaRamp.GAUSSIAN_BT_0_3,
+    "GAUSSIAN_BT_0_5": SX127xPaRamp.GAUSSIAN_BT_0_5,
+    "GAUSSIAN_BT_1_0": SX127xPaRamp.GAUSSIAN_BT_1_0,
+    "NO_SHAPING": SX127xPaRamp.NO_SHAPING
 }
 
 RAMP = {
@@ -98,6 +108,7 @@ CONFIG_SCHEMA = cv.Schema(
         cv.Required(CONF_NSS_PIN): pins.internal_gpio_output_pin_schema,
         cv.Required(CONF_FREQUENCY): cv.int_range(min=137000000, max=1020000000),
         cv.Required(CONF_MODULATION): cv.enum(MOD),
+        cv.Optional(CONF_SHAPING, default="NO_SHAPING"): cv.enum(SHAPING),
         cv.Optional(CONF_BITRATE, default=0): cv.int_range(min=0, max=300000),
         cv.Optional(CONF_FSK_FDEV, default=5000): cv.int_range(min=0, max=100000),
         cv.Optional(CONF_FSK_RAMP, default="40us"): cv.enum(RAMP),
@@ -142,6 +153,7 @@ async def to_code(config):
     cg.add(var.set_nss_pin(nss_pin))
     cg.add(var.set_frequency(config[CONF_FREQUENCY]))
     cg.add(var.set_modulation(config[CONF_MODULATION]))
+    cg.add(var.set_shaping(config[CONF_SHAPING]))
     cg.add(var.set_bitrate(config[CONF_BITRATE]))
     cg.add(var.set_payload_length(config[CONF_PAYLOAD_LENGTH]))
     cg.add(var.set_preamble_size(config[CONF_PREAMBLE_SIZE]))

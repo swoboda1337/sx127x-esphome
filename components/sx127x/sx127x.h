@@ -178,6 +178,12 @@ enum SX127xRxBw : uint8_t {
 };
 
 enum SX127xPaRamp : uint8_t {
+  CUTOFF_BR_X_2 = 0x40,
+  CUTOFF_BR_X_1 = 0x20,
+  GAUSSIAN_BT_0_3 = 0x60,
+  GAUSSIAN_BT_0_5 = 0x40,
+  GAUSSIAN_BT_1_0 = 0x20,
+  NO_SHAPING = 0x00,
   PA_RAMP_10 = 0x0F,
   PA_RAMP_12 = 0x0E,
   PA_RAMP_15 = 0x0D,
@@ -221,6 +227,7 @@ class SX127x : public Component,
   void set_frequency(uint32_t frequency) { this->frequency_ = frequency; }
   void set_bitrate(uint32_t bitrate) { this->bitrate_ = bitrate; }
   void set_modulation(SX127xOpMode modulation) { this->modulation_ = modulation; }
+  void set_shaping(SX127xPaRamp shaping) { this->shaping_ = shaping; }
   void set_fsk_ramp(SX127xPaRamp ramp) { this->fsk_ramp_ = ramp; }
   void set_fsk_fdev(uint32_t fdev) { this->fsk_fdev_ = fdev; }
   void set_rx_start(bool start) { this->rx_start_ = start; }
@@ -257,6 +264,7 @@ class SX127x : public Component,
   SX127xPaConfig pa_pin_;
   SX127xRxBw rx_bandwidth_;
   SX127xOpMode modulation_;
+  SX127xPaRamp shaping_;
   SX127xPaRamp fsk_ramp_;
   uint32_t fsk_fdev_;
   uint32_t frequency_;

@@ -166,7 +166,7 @@ void SX127x::configure() {
     this->pa_power_ = std::min(this->pa_power_, (uint32_t) 14);
     this->write_register_(REG_PA_CONFIG, (this->pa_power_ - 0) | this->pa_pin_ | PA_MAX_POWER);
   }
-  this->write_register_(REG_PA_RAMP, this->fsk_ramp_);
+  this->write_register_(REG_PA_RAMP, this->shaping_ | this->fsk_ramp_);
   this->write_register_(REG_FIFO_THRESH, TX_START_FIFO_EMPTY);
 
   // config bit synchronizer
@@ -300,6 +300,13 @@ void SX127x::dump_config() {
   ESP_LOGCONFIG(TAG, "  Preamble Errors: %" PRIu8, this->preamble_errors_);
   if (this->sync_value_.size() > 0) {
     ESP_LOGCONFIG(TAG, "  Sync Value: 0x%s", format_hex(this->sync_value_).c_str());
+  }
+  if (this->modulation_ == MOD_FSK) {
+    static const char* SHAPING_LUT[4] = {"NO_SHAPING", "GAUSSIAN_BT_1_0", "GAUSSIAN_BT_0_5", "GAUSSIAN_BT_0_3"};
+    ESP_LOGCONFIG(TAG, "  Shaping: %s", SHAPING_LUT[this->shaping_ >> 5]);
+  } else {
+    static const char* SHAPING_LUT[4] = {"NO_SHAPING", "CUTOFF_BR_X_1", "CUTOFF_BR_X_2", "ERROR"};
+    ESP_LOGCONFIG(TAG, "  Shaping: %s", SHAPING_LUT[this->shaping_ >> 5]);
   }
   ESP_LOGCONFIG(TAG, "  PA Pin: %s", this->pa_pin_ == PA_PIN_BOOST ? "BOOST" : "RFO");
   ESP_LOGCONFIG(TAG, "  PA Power: %" PRIu32 " dBm", this->pa_power_);
