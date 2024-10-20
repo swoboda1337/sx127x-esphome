@@ -63,13 +63,13 @@ void SX127x::setup() {
   this->rst_pin_->setup();
 
   // setup dio0
-  if(this->dio0_pin_) {
+  if (this->dio0_pin_) {
     this->dio0_pin_->setup();
     this->dio0_pin_->attach_interrupt(SX127xStore::gpio_intr, &this->store_, gpio::INTERRUPT_RISING_EDGE);
   }
 
   // setup dio2
-  if(this->dio2_pin_) {
+  if (this->dio2_pin_) {
     this->dio2_pin_->setup();
     this->dio2_pin_->pin_mode(gpio::FLAG_OPEN_DRAIN);
     this->store_.dio2_pin = this->dio2_pin_->to_isr();
@@ -221,7 +221,8 @@ void SX127x::transmit_packet(const std::vector<uint8_t> &packet) {
   this->write_register_(REG_OP_MODE, this->modulation_ | MODE_TX_FS);
   delay(1);
   this->write_register_(REG_OP_MODE, this->modulation_ | MODE_TX);
-  while (!this->store_.dio0_irq);
+  while (!this->store_.dio0_irq)
+    ;
   this->write_register_(REG_OP_MODE, this->modulation_ | MODE_STDBY);
   delay(1);
   if (this->rx_start_) {
@@ -302,10 +303,10 @@ void SX127x::dump_config() {
     ESP_LOGCONFIG(TAG, "  Sync Value: 0x%s", format_hex(this->sync_value_).c_str());
   }
   if (this->modulation_ == MOD_FSK) {
-    static const char* SHAPING_LUT[4] = {"NO_SHAPING", "GAUSSIAN_BT_1_0", "GAUSSIAN_BT_0_5", "GAUSSIAN_BT_0_3"};
+    static const char *SHAPING_LUT[4] = {"NO_SHAPING", "GAUSSIAN_BT_1_0", "GAUSSIAN_BT_0_5", "GAUSSIAN_BT_0_3"};
     ESP_LOGCONFIG(TAG, "  Shaping: %s", SHAPING_LUT[this->shaping_ >> 5]);
   } else {
-    static const char* SHAPING_LUT[4] = {"NO_SHAPING", "CUTOFF_BR_X_1", "CUTOFF_BR_X_2", "ERROR"};
+    static const char *SHAPING_LUT[4] = {"NO_SHAPING", "CUTOFF_BR_X_1", "CUTOFF_BR_X_2", "ERROR"};
     ESP_LOGCONFIG(TAG, "  Shaping: %s", SHAPING_LUT[this->shaping_ >> 5]);
   }
   ESP_LOGCONFIG(TAG, "  PA Pin: %s", this->pa_pin_ == PA_PIN_BOOST ? "BOOST" : "RFO");

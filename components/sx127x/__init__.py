@@ -3,7 +3,7 @@ import esphome.codegen as cg
 from esphome.components import spi
 import esphome.config_validation as cv
 from esphome.const import CONF_FREQUENCY, CONF_ID
-from esphome.core import CORE, TimePeriod
+from esphome.core import TimePeriod
 
 CODEOWNERS = ["@swoboda1337"]
 DEPENDENCIES = ["spi"]
@@ -48,7 +48,7 @@ SHAPING = {
     "GAUSSIAN_BT_0_3": SX127xPaRamp.GAUSSIAN_BT_0_3,
     "GAUSSIAN_BT_0_5": SX127xPaRamp.GAUSSIAN_BT_0_5,
     "GAUSSIAN_BT_1_0": SX127xPaRamp.GAUSSIAN_BT_1_0,
-    "NO_SHAPING": SX127xPaRamp.NO_SHAPING
+    "NO_SHAPING": SX127xPaRamp.NO_SHAPING,
 }
 
 RAMP = {
@@ -115,7 +115,9 @@ CONFIG_SCHEMA = cv.Schema(
         cv.Optional(CONF_SYNC_VALUE, default=[]): cv.ensure_list(cv.hex_uint8_t),
         cv.Optional(CONF_PAYLOAD_LENGTH, default=0): cv.int_range(min=0, max=64),
         cv.Optional(CONF_PREAMBLE_SIZE, default=0): cv.int_range(min=0, max=7),
-        cv.Optional(CONF_PREAMBLE_POLARITY, default=0xAA): cv.All(cv.hex_int, cv.one_of(0xAA, 0x55)),
+        cv.Optional(CONF_PREAMBLE_POLARITY, default=0xAA): cv.All(
+            cv.hex_int, cv.one_of(0xAA, 0x55)
+        ),
         cv.Optional(CONF_PREAMBLE_ERRORS, default=0): cv.int_range(min=0, max=31),
         cv.Optional(CONF_RX_FLOOR, default=-94): cv.float_range(min=-128, max=-1),
         cv.Optional(CONF_RX_START, default=True): cv.boolean,
@@ -139,7 +141,7 @@ async def to_code(config):
         await automation.build_automation(
             var.get_packet_trigger(),
             [(cg.std_vector.template(cg.uint8), "x")],
-            config[CONF_ON_PACKET]
+            config[CONF_ON_PACKET],
         )
     if CONF_DIO0_PIN in config:
         dio0_pin = await cg.gpio_pin_expression(config[CONF_DIO0_PIN])
