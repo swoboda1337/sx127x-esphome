@@ -2,7 +2,7 @@ from esphome import automation, pins
 import esphome.codegen as cg
 from esphome.components import spi
 import esphome.config_validation as cv
-from esphome.const import CONF_FREQUENCY, CONF_ID
+from esphome.const import CONF_FREQUENCY, CONF_ID, CONF_DATA
 from esphome.core import TimePeriod
 
 CODEOWNERS = ["@swoboda1337"]
@@ -99,6 +99,22 @@ RX_BW = {
     "250_0kHz": SX127xRxBw.RX_BW_250_0,
 }
 
+SendPacketAction = sx127x_ns.class_("SendPacketAction", automation.Action, cg.Parented.template(SX127x))
+SetModeTxAction = sx127x_ns.class_("SetModeTxAction", automation.Action)
+SetModeRxAction = sx127x_ns.class_("SetModeRxAction", automation.Action)
+SetModeStandbyAction = sx127x_ns.class_("SetModeStandbyAction", automation.Action)
+
+def validate_raw_data(value):
+    if isinstance(value, str):
+        return value.encode("utf-8")
+    if isinstance(value, str):
+        return value
+    if isinstance(value, list):
+        return cv.Schema([cv.hex_uint8_t])(value)
+    raise cv.Invalid(
+        "data must either be a string wrapped in quotes or a list of bytes"
+    )
+
 CONFIG_SCHEMA = cv.Schema(
     {
         cv.GenerateID(): cv.declare_id(SX127x),
@@ -170,3 +186,46 @@ async def to_code(config):
     cg.add(var.set_pa_power(config[CONF_PA_POWER]))
     cg.add(var.set_fsk_fdev(config[CONF_FSK_FDEV]))
     cg.add(var.set_fsk_ramp(config[CONF_FSK_RAMP]))
+
+
+SET_MODE_ACTION_SCHEMA = automation.maybe_simple_id(
+    {
+        cv.GenerateID(): cv.use_id(SX127x),
+    }
+)
+@automation.register_action(
+    "sx127x.set_mode_tx", SetModeTxAction, SET_MODE_ACTION_SCHEMA
+)
+@automation.register_action(
+    "sx127x.set_mode_rx", SetModeRxAction, SET_MODE_ACTION_SCHEMA
+)
+@automation.register_action(
+    "sx127x.set_mode_standby", SetModeStandbyAction, SET_MODE_ACTION_SCHEMA
+)
+async def set_mode_action_to_code(config, action_id, template_arg, args):
+    paren = await cg.get_variable(config[CONF_ID])
+    var = cg.new_Pvariable(action_id, template_arg, paren)
+    return var
+
+SEND_PACKET_ACTION_SCHEMA = cv.maybe_simple_value(
+    {
+        cv.GenerateID(): cv.use_id(SX127x),
+        cv.Required(CONF_DATA): cv.templatable(validate_raw_data),
+    },
+    key=CONF_DATA,
+)
+@automation.register_action(
+    "sx127x.send_packet", SendPacketAction, SEND_PACKET_ACTION_SCHEMA,
+)
+async def send_packet_action_to_code(config, action_id, template_arg, args):
+    var = cg.new_Pvariable(action_id, template_arg)
+    await cg.register_parented(var, config[CONF_ID])
+    data = config[CONF_DATA]
+    if isinstance(data, bytes):
+        data = list(data)
+    if cg.is_template(data):
+        templ = await cg.templatable(data, args, cg.std_vector.template(cg.uint8))
+        cg.add(var.set_data_template(templ))
+    else:
+        cg.add(var.set_data_static(data))
+    return var
