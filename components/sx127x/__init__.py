@@ -2,7 +2,7 @@ from esphome import automation, pins
 import esphome.codegen as cg
 from esphome.components import spi
 import esphome.config_validation as cv
-from esphome.const import CONF_FREQUENCY, CONF_ID, CONF_DATA
+from esphome.const import CONF_DATA, CONF_FREQUENCY, CONF_ID
 from esphome.core import TimePeriod
 
 CODEOWNERS = ["@swoboda1337"]
@@ -99,10 +99,13 @@ RX_BW = {
     "250_0kHz": SX127xRxBw.RX_BW_250_0,
 }
 
-SendPacketAction = sx127x_ns.class_("SendPacketAction", automation.Action, cg.Parented.template(SX127x))
+SendPacketAction = sx127x_ns.class_(
+    "SendPacketAction", automation.Action, cg.Parented.template(SX127x)
+)
 SetModeTxAction = sx127x_ns.class_("SetModeTxAction", automation.Action)
 SetModeRxAction = sx127x_ns.class_("SetModeRxAction", automation.Action)
 SetModeStandbyAction = sx127x_ns.class_("SetModeStandbyAction", automation.Action)
+
 
 def validate_raw_data(value):
     if isinstance(value, str):
@@ -114,6 +117,7 @@ def validate_raw_data(value):
     raise cv.Invalid(
         "data must either be a string wrapped in quotes or a list of bytes"
     )
+
 
 CONFIG_SCHEMA = cv.Schema(
     {
@@ -193,6 +197,8 @@ SET_MODE_ACTION_SCHEMA = automation.maybe_simple_id(
         cv.GenerateID(): cv.use_id(SX127x),
     }
 )
+
+
 @automation.register_action(
     "sx127x.set_mode_tx", SetModeTxAction, SET_MODE_ACTION_SCHEMA
 )
@@ -207,6 +213,7 @@ async def set_mode_action_to_code(config, action_id, template_arg, args):
     var = cg.new_Pvariable(action_id, template_arg, paren)
     return var
 
+
 SEND_PACKET_ACTION_SCHEMA = cv.maybe_simple_value(
     {
         cv.GenerateID(): cv.use_id(SX127x),
@@ -214,8 +221,10 @@ SEND_PACKET_ACTION_SCHEMA = cv.maybe_simple_value(
     },
     key=CONF_DATA,
 )
+
+
 @automation.register_action(
-    "sx127x.send_packet", SendPacketAction, SEND_PACKET_ACTION_SCHEMA,
+    "sx127x.send_packet", SendPacketAction, SEND_PACKET_ACTION_SCHEMA
 )
 async def send_packet_action_to_code(config, action_id, template_arg, args):
     var = cg.new_Pvariable(action_id, template_arg)
