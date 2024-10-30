@@ -119,38 +119,55 @@ def validate_raw_data(value):
     )
 
 
-CONFIG_SCHEMA = cv.Schema(
-    {
-        cv.GenerateID(): cv.declare_id(SX127x),
-        cv.Optional(CONF_DIO0_PIN): pins.internal_gpio_input_pin_schema,
-        cv.Optional(CONF_DIO2_PIN): pins.internal_gpio_input_pin_schema,
-        cv.Required(CONF_RST_PIN): pins.internal_gpio_output_pin_schema,
-        cv.Required(CONF_NSS_PIN): pins.internal_gpio_output_pin_schema,
-        cv.Required(CONF_FREQUENCY): cv.int_range(min=137000000, max=1020000000),
-        cv.Required(CONF_MODULATION): cv.enum(MOD),
-        cv.Optional(CONF_SHAPING, default="NONE"): cv.enum(SHAPING),
-        cv.Optional(CONF_BITRATE, default=0): cv.int_range(min=0, max=300000),
-        cv.Optional(CONF_FSK_FDEV, default=5000): cv.int_range(min=0, max=100000),
-        cv.Optional(CONF_FSK_RAMP, default="40us"): cv.enum(RAMP),
-        cv.Optional(CONF_SYNC_VALUE, default=[]): cv.ensure_list(cv.hex_uint8_t),
-        cv.Optional(CONF_PAYLOAD_LENGTH, default=0): cv.int_range(min=0, max=64),
-        cv.Optional(CONF_PREAMBLE_SIZE, default=0): cv.int_range(min=0, max=7),
-        cv.Optional(CONF_PREAMBLE_POLARITY, default=0xAA): cv.All(
-            cv.hex_int, cv.one_of(0xAA, 0x55)
-        ),
-        cv.Optional(CONF_PREAMBLE_ERRORS, default=0): cv.int_range(min=0, max=31),
-        cv.Optional(CONF_RX_FLOOR, default=-94): cv.float_range(min=-128, max=-1),
-        cv.Optional(CONF_RX_START, default=True): cv.boolean,
-        cv.Optional(CONF_RX_BANDWIDTH, default="50_0kHz"): cv.enum(RX_BW),
-        cv.Optional(CONF_RX_DURATION, default="0ms"): cv.All(
-            cv.positive_time_period_microseconds,
-            cv.Range(max=TimePeriod(microseconds=1000000000)),
-        ),
-        cv.Optional(CONF_PA_PIN, default="BOOST"): cv.enum(PA_PIN),
-        cv.Optional(CONF_PA_POWER, default=17): cv.int_range(min=0, max=17),
-        cv.Optional(CONF_ON_PACKET): automation.validate_automation(single=True),
-    }
-).extend(spi.spi_device_schema(False, 8e6, "mode0"))
+def validate_config(config):
+    if config[CONF_PAYLOAD_LENGTH] > 0 and CONF_DIO0_PIN not in config:
+        raise cv.Invalid("Cannot use packet mode without dio0_pin")
+    if config[CONF_PAYLOAD_LENGTH] > 0 and config[CONF_BITRATE] == 0:
+        raise cv.Invalid("Cannot use packet mode without setting bitrate")
+    if config[CONF_RX_DURATION] > TimePeriod() and CONF_DIO0_PIN not in config:
+        raise cv.Invalid("Cannot use rx_duration without dio0_pin")
+    if config[CONF_RX_DURATION] > TimePeriod() and CONF_DIO2_PIN not in config:
+        raise cv.Invalid("Cannot use rx_duration without dio2_pin")
+    if config[CONF_RX_DURATION] > TimePeriod() and config[CONF_PAYLOAD_LENGTH] > 0:
+        raise cv.Invalid("Cannot use rx_duration in packet mode")
+    return config
+
+
+CONFIG_SCHEMA = cv.All(
+    cv.Schema(
+        {
+            cv.GenerateID(): cv.declare_id(SX127x),
+            cv.Optional(CONF_DIO0_PIN): pins.internal_gpio_input_pin_schema,
+            cv.Optional(CONF_DIO2_PIN): pins.internal_gpio_input_pin_schema,
+            cv.Required(CONF_RST_PIN): pins.internal_gpio_output_pin_schema,
+            cv.Required(CONF_NSS_PIN): pins.internal_gpio_output_pin_schema,
+            cv.Required(CONF_FREQUENCY): cv.int_range(min=137000000, max=1020000000),
+            cv.Required(CONF_MODULATION): cv.enum(MOD),
+            cv.Optional(CONF_SHAPING, default="NONE"): cv.enum(SHAPING),
+            cv.Optional(CONF_BITRATE, default=0): cv.int_range(min=0, max=300000),
+            cv.Optional(CONF_FSK_FDEV, default=5000): cv.int_range(min=0, max=100000),
+            cv.Optional(CONF_FSK_RAMP, default="40us"): cv.enum(RAMP),
+            cv.Optional(CONF_SYNC_VALUE, default=[]): cv.ensure_list(cv.hex_uint8_t),
+            cv.Optional(CONF_PAYLOAD_LENGTH, default=0): cv.int_range(min=0, max=64),
+            cv.Optional(CONF_PREAMBLE_SIZE, default=0): cv.int_range(min=0, max=7),
+            cv.Optional(CONF_PREAMBLE_POLARITY, default=0xAA): cv.All(
+                cv.hex_int, cv.one_of(0xAA, 0x55)
+            ),
+            cv.Optional(CONF_PREAMBLE_ERRORS, default=0): cv.int_range(min=0, max=31),
+            cv.Optional(CONF_RX_FLOOR, default=-94): cv.float_range(min=-128, max=-1),
+            cv.Optional(CONF_RX_START, default=True): cv.boolean,
+            cv.Optional(CONF_RX_BANDWIDTH, default="50_0kHz"): cv.enum(RX_BW),
+            cv.Optional(CONF_RX_DURATION, default="0ms"): cv.All(
+                cv.positive_time_period_microseconds,
+                cv.Range(max=TimePeriod(microseconds=1000000000)),
+            ),
+            cv.Optional(CONF_PA_PIN, default="BOOST"): cv.enum(PA_PIN),
+            cv.Optional(CONF_PA_POWER, default=17): cv.int_range(min=0, max=17),
+            cv.Optional(CONF_ON_PACKET): automation.validate_automation(single=True),
+        },
+    ).extend(spi.spi_device_schema(False, 8e6, "mode0")),
+    validate_config,
+)
 
 
 async def to_code(config):
