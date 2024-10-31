@@ -130,6 +130,10 @@ def validate_config(config):
         raise cv.Invalid("Cannot use rx_duration without dio2_pin")
     if config[CONF_RX_DURATION] > TimePeriod() and config[CONF_PAYLOAD_LENGTH] > 0:
         raise cv.Invalid("Cannot use rx_duration in packet mode")
+    if config[CONF_PA_PIN] == "RFO" and config[CONF_PA_POWER] > 15:
+        raise cv.Invalid("PA power must be <= 15 dbm when using the RFO pin")
+    if config[CONF_PA_PIN] == "BOOST" and config[CONF_PA_POWER] < 2:
+        raise cv.Invalid("PA power must be >= 2 dbm when using the BOOST pin")
     return config
 
 
