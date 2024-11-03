@@ -218,7 +218,7 @@ class SX127x : public Component,
                public spi::SPIDevice<spi::BIT_ORDER_MSB_FIRST, spi::CLOCK_POLARITY_LOW, spi::CLOCK_PHASE_LEADING,
                                      spi::DATA_RATE_8MHZ> {
  public:
-  float get_setup_priority() const override { return setup_priority::HARDWARE; }
+  float get_setup_priority() const override { return setup_priority::PROCESSOR; }
   void setup() override;
   void loop() override;
   void dump_config() override;
