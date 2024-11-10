@@ -191,7 +191,7 @@ void SX127x::configure() {
   // config sync generation and setup ook threshold
   uint8_t bitsync = this->bitsync_ ? BIT_SYNC_ON : BIT_SYNC_OFF;
   this->write_register_(REG_OOK_PEAK, bitsync | OOK_THRESH_STEP_0_5 | OOK_THRESH_PEAK);
-  this->write_register_(REG_OOK_AVG, OOK_THRESH_DEC_1_8);
+  this->write_register_(REG_OOK_AVG, OOK_AVG_RESERVED | OOK_THRESH_DEC_1_8);
 
   // set rx floor
   this->write_register_(REG_OOK_FIX, 256 + int(this->rx_floor_ * 2.0));

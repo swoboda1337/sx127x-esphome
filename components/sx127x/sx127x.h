@@ -47,7 +47,7 @@ enum SX127xReg : uint8_t {
   REG_FIFO_THRESH = 0x35,
   REG_DIO_MAPPING1 = 0x40,
   REG_DIO_MAPPING2 = 0x41,
-  REG_VERSION = 0x42
+  REG_VERSION = 0x42,
 };
 
 enum SX127xRxConfig : uint8_t {
@@ -89,7 +89,7 @@ enum SX127xOpMode : uint8_t {
   MODE_TX = 0x03,
   MODE_TX_FS = 0x02,
   MODE_STDBY = 0x01,
-  MODE_SLEEP = 0x00
+  MODE_SLEEP = 0x00,
 };
 
 enum SX127xDioMapping1 : uint8_t {
@@ -134,7 +134,7 @@ enum SX127xOokPeak : uint8_t {
   OOK_THRESH_STEP_2_0 = 0x03,
   OOK_THRESH_STEP_1_5 = 0x02,
   OOK_THRESH_STEP_1_0 = 0x01,
-  OOK_THRESH_STEP_0_5 = 0x00
+  OOK_THRESH_STEP_0_5 = 0x00,
 };
 
 enum SX127xOokAvg : uint8_t {
@@ -145,7 +145,8 @@ enum SX127xOokAvg : uint8_t {
   OOK_THRESH_DEC_1_8 = 0x60,
   OOK_THRESH_DEC_1_4 = 0x40,
   OOK_THRESH_DEC_1_2 = 0x20,
-  OOK_THRESH_DEC_1 = 0x00
+  OOK_THRESH_DEC_1 = 0x00,
+  OOK_AVG_RESERVED = 0x10,
 };
 
 enum SX127xPacketConfig2 : uint8_t {
@@ -174,7 +175,7 @@ enum SX127xRxBw : uint8_t {
   RX_BW_125_0 = 0x02,
   RX_BW_166_7 = 0x11,
   RX_BW_200_0 = 0x09,
-  RX_BW_250_0 = 0x01
+  RX_BW_250_0 = 0x01,
 };
 
 enum SX127xPaRamp : uint8_t {
@@ -200,7 +201,7 @@ enum SX127xPaRamp : uint8_t {
   PA_RAMP_500 = 0x03,
   PA_RAMP_1000 = 0x02,
   PA_RAMP_2000 = 0x01,
-  PA_RAMP_3400 = 0x00
+  PA_RAMP_3400 = 0x00,
 };
 
 struct SX127xStore {
