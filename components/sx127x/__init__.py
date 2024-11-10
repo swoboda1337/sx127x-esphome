@@ -21,6 +21,7 @@ CONF_RX_START = "rx_start"
 CONF_RX_BANDWIDTH = "rx_bandwidth"
 CONF_RX_DURATION = "rx_duration"
 CONF_BITRATE = "bitrate"
+CONF_BITSYNC = "bitsync"
 CONF_PAYLOAD_LENGTH = "payload_length"
 CONF_PREAMBLE_SIZE = "preamble_size"
 CONF_PREAMBLE_POLARITY = "preamble_polarity"
@@ -134,6 +135,12 @@ def validate_config(config):
         raise cv.Invalid("PA power must be <= 15 dbm when using the RFO pin")
     if config[CONF_PA_PIN] == "BOOST" and config[CONF_PA_POWER] < 2:
         raise cv.Invalid("PA power must be >= 2 dbm when using the BOOST pin")
+    if CONF_BITSYNC in config and config[CONF_BITSYNC] and CONF_BITRATE not in config:
+        raise cv.Invalid("Bitsync is true but bitrate is not configured")
+    if CONF_BITRATE in config and CONF_BITSYNC not in config:
+        raise cv.Invalid(
+            "Bitrate is configured but not bitsync; add 'bitsync: true' for original functionality"
+        )
     return config
 
 
@@ -148,7 +155,8 @@ CONFIG_SCHEMA = cv.All(
             cv.Required(CONF_FREQUENCY): cv.int_range(min=137000000, max=1020000000),
             cv.Required(CONF_MODULATION): cv.enum(MOD),
             cv.Optional(CONF_SHAPING, default="NONE"): cv.enum(SHAPING),
-            cv.Optional(CONF_BITRATE, default=0): cv.int_range(min=0, max=300000),
+            cv.Optional(CONF_BITRATE): cv.int_range(min=500, max=300000),
+            cv.Optional(CONF_BITSYNC): cv.boolean,
             cv.Optional(CONF_FSK_FDEV, default=5000): cv.int_range(min=0, max=100000),
             cv.Optional(CONF_FSK_RAMP, default="40us"): cv.enum(RAMP),
             cv.Optional(CONF_SYNC_VALUE, default=[]): cv.ensure_list(cv.hex_uint8_t),
@@ -169,7 +177,9 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_PA_POWER, default=17): cv.int_range(min=0, max=17),
             cv.Optional(CONF_ON_PACKET): automation.validate_automation(single=True),
         },
-    ).extend(spi.spi_device_schema(False, 8e6, "mode0")),
+    )
+    .extend(cv.COMPONENT_SCHEMA)
+    .extend(spi.spi_device_schema(False, 8e6, "mode0")),
     validate_config,
 )
 
@@ -197,7 +207,14 @@ async def to_code(config):
     cg.add(var.set_frequency(config[CONF_FREQUENCY]))
     cg.add(var.set_modulation(config[CONF_MODULATION]))
     cg.add(var.set_shaping(config[CONF_SHAPING]))
-    cg.add(var.set_bitrate(config[CONF_BITRATE]))
+    if CONF_BITRATE in config:
+        cg.add(var.set_bitrate(config[CONF_BITRATE]))
+    else:
+        cg.add(var.set_bitrate(4800))
+    if CONF_BITSYNC in config:
+        cg.add(var.set_bitsync(config[CONF_BITSYNC]))
+    else:
+        cg.add(var.set_bitsync(False))
     cg.add(var.set_payload_length(config[CONF_PAYLOAD_LENGTH]))
     cg.add(var.set_preamble_size(config[CONF_PREAMBLE_SIZE]))
     cg.add(var.set_preamble_polarity(config[CONF_PREAMBLE_POLARITY]))

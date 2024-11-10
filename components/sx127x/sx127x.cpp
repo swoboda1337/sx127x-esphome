@@ -85,8 +85,6 @@ void SX127x::setup() {
 }
 
 void SX127x::configure() {
-  uint8_t bit_sync = BIT_SYNC_OFF;
-
   // toggle chip reset
   this->rst_pin_->digital_write(false);
   delay(1);
@@ -118,12 +116,9 @@ void SX127x::configure() {
   this->write_register_(REG_RX_BW, this->rx_bandwidth_);
 
   // set bitrate
-  if (this->bitrate_ > 0) {
-    uint64_t bitrate = (FXOSC + this->bitrate_ / 2) / this->bitrate_;  // round up
-    this->write_register_(REG_BITRATE_MSB, (uint8_t) ((bitrate >> 8) & 0xFF));
-    this->write_register_(REG_BITRATE_LSB, (uint8_t) ((bitrate >> 0) & 0xFF));
-    bit_sync = BIT_SYNC_ON;
-  }
+  uint64_t bitrate = (FXOSC + this->bitrate_ / 2) / this->bitrate_;  // round up
+  this->write_register_(REG_BITRATE_MSB, (uint8_t) ((bitrate >> 8) & 0xFF));
+  this->write_register_(REG_BITRATE_LSB, (uint8_t) ((bitrate >> 0) & 0xFF));
 
   // configure dio mapping
   if (this->payload_length_ > 0) {
@@ -194,7 +189,8 @@ void SX127x::configure() {
   this->write_register_(REG_PREAMBLE_LSB, this->preamble_size_);
 
   // config sync generation and setup ook threshold
-  this->write_register_(REG_OOK_PEAK, bit_sync | OOK_THRESH_STEP_0_5 | OOK_THRESH_PEAK);
+  uint8_t bitsync = this->bitsync_ ? BIT_SYNC_ON : BIT_SYNC_OFF;
+  this->write_register_(REG_OOK_PEAK, bitsync | OOK_THRESH_STEP_0_5 | OOK_THRESH_PEAK);
   this->write_register_(REG_OOK_AVG, OOK_THRESH_DEC_1_8);
 
   // set rx floor
@@ -297,6 +293,7 @@ void SX127x::dump_config() {
   ESP_LOGCONFIG(TAG, "  Frequency: %f MHz", (float) this->frequency_ / 1000000);
   ESP_LOGCONFIG(TAG, "  Modulation: %s", this->modulation_ == MOD_FSK ? "FSK" : "OOK");
   ESP_LOGCONFIG(TAG, "  Bitrate: %" PRIu32 "b/s", this->bitrate_);
+  ESP_LOGCONFIG(TAG, "  Bitsync: %s", this->bitsync_ ? "true" : "false");
   ESP_LOGCONFIG(TAG, "  Rx Duration: %" PRIu32 " us", this->rx_duration_);
   ESP_LOGCONFIG(TAG, "  Rx Bandwidth: %.1f kHz", (float) rx_bw / 1000);
   ESP_LOGCONFIG(TAG, "  Rx Start: %s", this->rx_start_ ? "true" : "false");

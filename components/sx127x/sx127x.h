@@ -228,6 +228,7 @@ class SX127x : public Component,
   void set_nss_pin(InternalGPIOPin *nss_pin) { this->nss_pin_ = nss_pin; }
   void set_frequency(uint32_t frequency) { this->frequency_ = frequency; }
   void set_bitrate(uint32_t bitrate) { this->bitrate_ = bitrate; }
+  void set_bitsync(bool bitsync) { this->bitsync_ = bitsync; }
   void set_modulation(SX127xOpMode modulation) { this->modulation_ = modulation; }
   void set_shaping(SX127xPaRamp shaping) { this->shaping_ = shaping; }
   void set_fsk_ramp(SX127xPaRamp ramp) { this->fsk_ramp_ = ramp; }
@@ -280,6 +281,7 @@ class SX127x : public Component,
   uint8_t rx_config_;
   float rx_floor_;
   bool rx_start_;
+  bool bitsync_;
 };
 
 }  // namespace sx127x
