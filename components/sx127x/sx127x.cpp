@@ -205,6 +205,10 @@ void SX127x::configure() {
   this->set_mode_standby();
   delay(1);
 
+  // run image cal
+  this->write_register_(REG_IMAGE_CAL, AUTO_IMAGE_CAL_ON | IMAGE_CAL_START | TEMP_THRESHOLD_10C);
+  delay(10);
+
   // enable rx mode
   if (this->rx_start_) {
     this->set_mode_rx();
