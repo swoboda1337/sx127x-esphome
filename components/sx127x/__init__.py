@@ -3,15 +3,14 @@ import esphome.codegen as cg
 from esphome.components import spi
 import esphome.config_validation as cv
 from esphome.const import CONF_DATA, CONF_FREQUENCY, CONF_ID
-from esphome.core import TimePeriod
 
+MULTI_CONF = True
 CODEOWNERS = ["@swoboda1337"]
 DEPENDENCIES = ["spi"]
 
 CONF_PA_POWER = "pa_power"
 CONF_PA_PIN = "pa_pin"
 CONF_DIO0_PIN = "dio0_pin"
-CONF_DIO2_PIN = "dio2_pin"
 CONF_NSS_PIN = "nss_pin"
 CONF_RST_PIN = "rst_pin"
 CONF_MODULATION = "modulation"
@@ -19,7 +18,6 @@ CONF_SHAPING = "shaping"
 CONF_RX_FLOOR = "rx_floor"
 CONF_RX_START = "rx_start"
 CONF_RX_BANDWIDTH = "rx_bandwidth"
-CONF_RX_DURATION = "rx_duration"
 CONF_BITRATE = "bitrate"
 CONF_BITSYNC = "bitsync"
 CONF_PAYLOAD_LENGTH = "payload_length"
@@ -125,12 +123,6 @@ def validate_config(config):
         raise cv.Invalid("Cannot use packet mode without dio0_pin")
     if config[CONF_PAYLOAD_LENGTH] > 0 and config[CONF_BITRATE] == 0:
         raise cv.Invalid("Cannot use packet mode without setting bitrate")
-    if config[CONF_RX_DURATION] > TimePeriod() and CONF_DIO0_PIN not in config:
-        raise cv.Invalid("Cannot use rx_duration without dio0_pin")
-    if config[CONF_RX_DURATION] > TimePeriod() and CONF_DIO2_PIN not in config:
-        raise cv.Invalid("Cannot use rx_duration without dio2_pin")
-    if config[CONF_RX_DURATION] > TimePeriod() and config[CONF_PAYLOAD_LENGTH] > 0:
-        raise cv.Invalid("Cannot use rx_duration in packet mode")
     if config[CONF_PA_PIN] == "RFO" and config[CONF_PA_POWER] > 15:
         raise cv.Invalid("PA power must be <= 15 dbm when using the RFO pin")
     if config[CONF_PA_PIN] == "BOOST" and config[CONF_PA_POWER] < 2:
@@ -149,7 +141,6 @@ CONFIG_SCHEMA = cv.All(
         {
             cv.GenerateID(): cv.declare_id(SX127x),
             cv.Optional(CONF_DIO0_PIN): pins.internal_gpio_input_pin_schema,
-            cv.Optional(CONF_DIO2_PIN): pins.internal_gpio_input_pin_schema,
             cv.Required(CONF_RST_PIN): pins.internal_gpio_output_pin_schema,
             cv.Required(CONF_NSS_PIN): pins.internal_gpio_output_pin_schema,
             cv.Required(CONF_FREQUENCY): cv.int_range(min=137000000, max=1020000000),
@@ -169,10 +160,6 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_RX_FLOOR, default=-94): cv.float_range(min=-128, max=-1),
             cv.Optional(CONF_RX_START, default=True): cv.boolean,
             cv.Optional(CONF_RX_BANDWIDTH, default="50_0kHz"): cv.enum(RX_BW),
-            cv.Optional(CONF_RX_DURATION, default="0ms"): cv.All(
-                cv.positive_time_period_microseconds,
-                cv.Range(max=TimePeriod(microseconds=1000000000)),
-            ),
             cv.Optional(CONF_PA_PIN, default="BOOST"): cv.enum(PA_PIN),
             cv.Optional(CONF_PA_POWER, default=17): cv.int_range(min=0, max=17),
             cv.Optional(CONF_ON_PACKET): automation.validate_automation(single=True),
@@ -197,9 +184,6 @@ async def to_code(config):
     if CONF_DIO0_PIN in config:
         dio0_pin = await cg.gpio_pin_expression(config[CONF_DIO0_PIN])
         cg.add(var.set_dio0_pin(dio0_pin))
-    if CONF_DIO2_PIN in config:
-        dio2_pin = await cg.gpio_pin_expression(config[CONF_DIO2_PIN])
-        cg.add(var.set_dio2_pin(dio2_pin))
     rst_pin = await cg.gpio_pin_expression(config[CONF_RST_PIN])
     cg.add(var.set_rst_pin(rst_pin))
     nss_pin = await cg.gpio_pin_expression(config[CONF_NSS_PIN])
@@ -223,7 +207,6 @@ async def to_code(config):
     cg.add(var.set_rx_floor(config[CONF_RX_FLOOR]))
     cg.add(var.set_rx_start(config[CONF_RX_START]))
     cg.add(var.set_rx_bandwidth(config[CONF_RX_BANDWIDTH]))
-    cg.add(var.set_rx_duration(config[CONF_RX_DURATION]))
     cg.add(var.set_pa_pin(config[CONF_PA_PIN]))
     cg.add(var.set_pa_power(config[CONF_PA_POWER]))
     cg.add(var.set_fsk_fdev(config[CONF_FSK_FDEV]))

@@ -225,11 +225,7 @@ enum SX127xPaConfig : uint8_t {
 
 struct SX127xStore {
   static void gpio_intr(SX127xStore *arg);
-  volatile uint32_t dio0_micros{0};
   volatile bool dio0_irq{false};
-  volatile bool dio2_set{false};
-  volatile bool dio2_toggle{false};
-  ISRInternalGPIOPin dio2_pin;
 };
 
 class SX127x : public Component,
@@ -241,7 +237,6 @@ class SX127x : public Component,
   void loop() override;
   void dump_config() override;
   void set_dio0_pin(InternalGPIOPin *dio0_pin) { this->dio0_pin_ = dio0_pin; }
-  void set_dio2_pin(InternalGPIOPin *dio2_pin) { this->dio2_pin_ = dio2_pin; }
   void set_rst_pin(InternalGPIOPin *rst_pin) { this->rst_pin_ = rst_pin; }
   void set_nss_pin(InternalGPIOPin *nss_pin) { this->nss_pin_ = nss_pin; }
   void set_frequency(uint32_t frequency) { this->frequency_ = frequency; }
@@ -254,7 +249,6 @@ class SX127x : public Component,
   void set_rx_start(bool start) { this->rx_start_ = start; }
   void set_rx_floor(float floor) { this->rx_floor_ = floor; }
   void set_rx_bandwidth(SX127xRxBw bandwidth) { this->rx_bandwidth_ = bandwidth; }
-  void set_rx_duration(uint32_t duration) { this->rx_duration_ = duration; }
   void set_pa_pin(SX127xPaConfig pin) { this->pa_pin_ = pin; }
   void set_pa_power(uint32_t power) { this->pa_power_ = power; }
   void set_sync_value(const std::vector<uint8_t> &sync_value) { this->sync_value_ = sync_value; }
@@ -278,7 +272,6 @@ class SX127x : public Component,
   Trigger<std::vector<uint8_t>> *packet_trigger_{new Trigger<std::vector<uint8_t>>()};
   std::vector<uint8_t> sync_value_;
   InternalGPIOPin *dio0_pin_{nullptr};
-  InternalGPIOPin *dio2_pin_{nullptr};
   InternalGPIOPin *rst_pin_{nullptr};
   InternalGPIOPin *nss_pin_{nullptr};
   SX127xStore store_;
@@ -290,7 +283,6 @@ class SX127x : public Component,
   uint32_t fsk_fdev_;
   uint32_t frequency_;
   uint32_t bitrate_;
-  uint32_t rx_duration_;
   uint32_t pa_power_;
   uint32_t payload_length_;
   uint8_t preamble_polarity_;

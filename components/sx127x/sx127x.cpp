@@ -8,13 +8,7 @@ namespace sx127x {
 static const char *const TAG = "sx127x";
 static const uint32_t FXOSC = 32000000u;
 
-void IRAM_ATTR HOT SX127xStore::gpio_intr(SX127xStore *arg) {
-  if (arg->dio2_set && arg->dio2_toggle) {
-    arg->dio2_pin.pin_mode(gpio::FLAG_INPUT);
-  }
-  arg->dio0_micros = micros();
-  arg->dio0_irq = true;
-}
+void IRAM_ATTR HOT SX127xStore::gpio_intr(SX127xStore *arg) { arg->dio0_irq = true; }
 
 uint8_t SX127x::read_register_(uint8_t reg) { return this->single_transfer_((uint8_t) reg & 0x7F, 0x00); }
 
@@ -69,14 +63,6 @@ void SX127x::setup() {
     this->dio0_pin_->attach_interrupt(SX127xStore::gpio_intr, &this->store_, gpio::INTERRUPT_RISING_EDGE);
   }
 
-  // setup dio2
-  if (this->dio2_pin_) {
-    this->dio2_pin_->setup();
-    this->dio2_pin_->pin_mode(gpio::FLAG_OPEN_DRAIN);
-    this->store_.dio2_pin = this->dio2_pin_->to_isr();
-    this->store_.dio2_set = true;
-  }
-
   // start spi
   this->spi_setup();
 
@@ -123,15 +109,8 @@ void SX127x::configure() {
   // configure dio mapping
   if (this->payload_length_ > 0) {
     this->write_register_(REG_DIO_MAPPING1, DIO0_MAPPING_00);
-  } else if (this->rx_duration_ > 0) {
-    this->write_register_(REG_DIO_MAPPING1, DIO0_MAPPING_01);
   } else {
     this->write_register_(REG_DIO_MAPPING1, DIO0_MAPPING_11);
-  }
-  if (this->preamble_size_ > 0) {
-    this->write_register_(REG_DIO_MAPPING2, MAP_PREAMBLE_INT);
-  } else {
-    this->write_register_(REG_DIO_MAPPING2, MAP_RSSI_INT);
   }
 
   // configure rx and afc
@@ -199,11 +178,9 @@ void SX127x::configure() {
 
   // clear irq flag
   this->store_.dio0_irq = false;
-  this->store_.dio2_toggle = (this->rx_duration_ > 0 && this->payload_length_ == 0);
 
   // enable standby mode
   this->set_mode_standby();
-  delay(1);
 
   // run image cal
   this->write_register_(REG_IMAGE_CAL, AUTO_IMAGE_CAL_ON | IMAGE_CAL_START | TEMP_THRESHOLD_10C);
@@ -212,76 +189,51 @@ void SX127x::configure() {
   // enable rx mode
   if (this->rx_start_) {
     this->set_mode_rx();
-    delay(1);
   }
 }
 
 void SX127x::transmit_packet(const std::vector<uint8_t> &packet) {
-  this->write_register_(REG_OP_MODE, this->modulation_ | MODE_STDBY);
-  delay(1);
+  this->set_mode_standby();
   this->write_fifo_(packet);
-  this->write_register_(REG_OP_MODE, this->modulation_ | MODE_TX_FS);
-  delay(1);
-  this->write_register_(REG_OP_MODE, this->modulation_ | MODE_TX);
-  while (!this->store_.dio0_irq)
-    ;
-  this->write_register_(REG_OP_MODE, this->modulation_ | MODE_STDBY);
-  delay(1);
+  this->set_mode_tx();
+  while (!this->store_.dio0_irq) {
+    // do nothing
+  }
+  this->store_.dio0_irq = false;
   if (this->rx_start_) {
     this->set_mode_rx();
-    delay(1);
+  } else {
+    this->set_mode_standby();
   }
 }
 
 void SX127x::loop() {
-  if (this->store_.dio0_irq) {
-    if (this->payload_length_ > 0) {
-      // read packet, reset the receiver and call the trigger
-      std::vector<uint8_t> packet;
-      this->read_fifo_(packet);
-      this->store_.dio0_irq = false;
-      this->write_register_(REG_RX_CONFIG, RESTART_PLL_LOCK | this->rx_config_);
-      this->packet_trigger_->trigger(packet);
-    } else {
-      // wait until rx duration expires then reset rx and change dio2 mode to avoid overloading
-      // remote receiver with too much noise
-      if ((micros() - this->store_.dio0_micros) >= this->rx_duration_) {
-        if (this->dio2_pin_) {
-          this->dio2_pin_->pin_mode(gpio::FLAG_OPEN_DRAIN);
-        }
-        this->store_.dio0_irq = false;
-        this->write_register_(REG_RX_CONFIG, RESTART_PLL_LOCK | this->rx_config_);
-      }
-    }
+  if (this->store_.dio0_irq && this->payload_length_ > 0) {
+    std::vector<uint8_t> packet;
+    this->store_.dio0_irq = false;
+    this->read_fifo_(packet);
+    this->write_register_(REG_RX_CONFIG, RESTART_PLL_LOCK | this->rx_config_);
+    this->packet_trigger_->trigger(packet);
   }
 }
 
-void SX127x::set_mode_standby() { this->write_register_(REG_OP_MODE, this->modulation_ | MODE_STDBY); }
+void SX127x::set_mode_standby() {
+  this->write_register_(REG_OP_MODE, this->modulation_ | MODE_STDBY);
+  delay(1);
+}
 
 void SX127x::set_mode_rx() {
-  if (this->dio2_pin_) {
-    this->write_register_(REG_OP_MODE, this->modulation_ | MODE_STDBY);
-    delay(1);
-    if (this->rx_duration_ > 0 && this->payload_length_ == 0) {
-      this->dio2_pin_->pin_mode(gpio::FLAG_OPEN_DRAIN);
-    } else {
-      this->dio2_pin_->pin_mode(gpio::FLAG_INPUT);
-    }
-  }
   this->write_register_(REG_OP_MODE, this->modulation_ | MODE_RX_FS);
   delay(1);
   this->write_register_(REG_OP_MODE, this->modulation_ | MODE_RX);
+  delay(1);
 }
 
 void SX127x::set_mode_tx() {
-  if (this->dio2_pin_) {
-    this->write_register_(REG_OP_MODE, this->modulation_ | MODE_STDBY);
-    delay(1);
-    this->dio2_pin_->pin_mode(gpio::FLAG_OUTPUT);
-  }
   this->write_register_(REG_OP_MODE, this->modulation_ | MODE_TX_FS);
   delay(1);
   this->write_register_(REG_OP_MODE, this->modulation_ | MODE_TX);
+  delay(1);
 }
 
 void SX127x::dump_config() {
@@ -293,12 +245,10 @@ void SX127x::dump_config() {
   LOG_PIN("  NSS Pin: ", this->nss_pin_);
   LOG_PIN("  RST Pin: ", this->rst_pin_);
   LOG_PIN("  DIO0 Pin: ", this->dio0_pin_);
-  LOG_PIN("  DIO2 Pin: ", this->dio2_pin_);
   ESP_LOGCONFIG(TAG, "  Frequency: %f MHz", (float) this->frequency_ / 1000000);
   ESP_LOGCONFIG(TAG, "  Modulation: %s", this->modulation_ == MOD_FSK ? "FSK" : "OOK");
   ESP_LOGCONFIG(TAG, "  Bitrate: %" PRIu32 "b/s", this->bitrate_);
   ESP_LOGCONFIG(TAG, "  Bitsync: %s", this->bitsync_ ? "true" : "false");
-  ESP_LOGCONFIG(TAG, "  Rx Duration: %" PRIu32 " us", this->rx_duration_);
   ESP_LOGCONFIG(TAG, "  Rx Bandwidth: %.1f kHz", (float) rx_bw / 1000);
   ESP_LOGCONFIG(TAG, "  Rx Start: %s", this->rx_start_ ? "true" : "false");
   ESP_LOGCONFIG(TAG, "  Rx Floor: %.1f dBm", this->rx_floor_);
