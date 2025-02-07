@@ -16,43 +16,29 @@ void SX127x::write_register_(uint8_t reg, uint8_t value) { this->single_transfer
 
 uint8_t SX127x::single_transfer_(uint8_t reg, uint8_t value) {
   uint8_t response;
-  this->delegate_->begin_transaction();
-  this->nss_pin_->digital_write(false);
-  this->delegate_->transfer(reg);
-  response = this->delegate_->transfer(value);
-  this->nss_pin_->digital_write(true);
-  this->delegate_->end_transaction();
+  this->enable();
+  this->write_byte(reg);
+  response = this->transfer_byte(value);
+  this->disable();
   return response;
 }
 
 void SX127x::read_fifo_(std::vector<uint8_t> &packet) {
-  this->delegate_->begin_transaction();
-  this->nss_pin_->digital_write(false);
-  this->delegate_->transfer(REG_FIFO & 0x7F);
-  for (uint32_t i = 0; i < this->payload_length_; i++) {
-    packet.push_back(this->delegate_->transfer(0x00));
-  }
-  this->nss_pin_->digital_write(true);
-  this->delegate_->end_transaction();
+  this->enable();
+  this->write_byte(REG_FIFO & 0x7F);
+  this->read_array(packet.data(), packet.size());
+  this->disable();
 }
 
 void SX127x::write_fifo_(const std::vector<uint8_t> &packet) {
-  this->delegate_->begin_transaction();
-  this->nss_pin_->digital_write(false);
-  this->delegate_->transfer(REG_FIFO | 0x80);
-  for (uint32_t i = 0; i < this->payload_length_; i++) {
-    this->delegate_->transfer(packet[i]);
-  }
-  this->nss_pin_->digital_write(true);
-  this->delegate_->end_transaction();
+  this->enable();
+  this->write_byte(REG_FIFO | 0x80);
+  this->write_array(packet.data(), packet.size());
+  this->disable();
 }
 
 void SX127x::setup() {
   ESP_LOGCONFIG(TAG, "Setting up SX127x...");
-
-  // setup nss and set high
-  this->nss_pin_->setup();
-  this->nss_pin_->digital_write(true);
 
   // setup reset
   this->rst_pin_->setup();
@@ -193,6 +179,10 @@ void SX127x::configure() {
 }
 
 void SX127x::transmit_packet(const std::vector<uint8_t> &packet) {
+  if (packet.size() != this->payload_length_) {
+    ESP_LOGE(TAG, "Packet size does not match payload length");
+    return;
+  }
   this->set_mode_standby();
   this->write_fifo_(packet);
   this->set_mode_tx();
@@ -209,7 +199,7 @@ void SX127x::transmit_packet(const std::vector<uint8_t> &packet) {
 
 void SX127x::loop() {
   if (this->store_.dio0_irq && this->payload_length_ > 0) {
-    std::vector<uint8_t> packet;
+    std::vector<uint8_t> packet(this->payload_length_);
     this->store_.dio0_irq = false;
     this->read_fifo_(packet);
     this->write_register_(REG_RX_CONFIG, RESTART_PLL_LOCK | this->rx_config_);
@@ -242,15 +232,15 @@ void SX127x::dump_config() {
   uint32_t rx_bw_exp = this->rx_bandwidth_ & 0x7;
   float rx_bw = (float) FXOSC / (rx_bw_mant * (1 << (rx_bw_exp + 2)));
   ESP_LOGCONFIG(TAG, "SX127x:");
-  LOG_PIN("  NSS Pin: ", this->nss_pin_);
+  LOG_PIN("  NSS Pin: ", this->cs_);
   LOG_PIN("  RST Pin: ", this->rst_pin_);
   LOG_PIN("  DIO0 Pin: ", this->dio0_pin_);
   ESP_LOGCONFIG(TAG, "  Frequency: %f MHz", (float) this->frequency_ / 1000000);
   ESP_LOGCONFIG(TAG, "  Modulation: %s", this->modulation_ == MOD_FSK ? "FSK" : "OOK");
   ESP_LOGCONFIG(TAG, "  Bitrate: %" PRIu32 "b/s", this->bitrate_);
-  ESP_LOGCONFIG(TAG, "  Bitsync: %s", this->bitsync_ ? "true" : "false");
+  ESP_LOGCONFIG(TAG, "  Bitsync: %s", TRUEFALSE(this->bitsync_));
   ESP_LOGCONFIG(TAG, "  Rx Bandwidth: %.1f kHz", (float) rx_bw / 1000);
-  ESP_LOGCONFIG(TAG, "  Rx Start: %s", this->rx_start_ ? "true" : "false");
+  ESP_LOGCONFIG(TAG, "  Rx Start: %s", TRUEFALSE(this->rx_start_));
   ESP_LOGCONFIG(TAG, "  Rx Floor: %.1f dBm", this->rx_floor_);
   ESP_LOGCONFIG(TAG, "  Payload Length: %" PRIu32, this->payload_length_);
   ESP_LOGCONFIG(TAG, "  Preamble Polarity: 0x%X", this->preamble_polarity_);

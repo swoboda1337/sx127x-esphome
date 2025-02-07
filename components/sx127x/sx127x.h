@@ -238,7 +238,6 @@ class SX127x : public Component,
   void dump_config() override;
   void set_dio0_pin(InternalGPIOPin *dio0_pin) { this->dio0_pin_ = dio0_pin; }
   void set_rst_pin(InternalGPIOPin *rst_pin) { this->rst_pin_ = rst_pin; }
-  void set_nss_pin(InternalGPIOPin *nss_pin) { this->nss_pin_ = nss_pin; }
   void set_frequency(uint32_t frequency) { this->frequency_ = frequency; }
   void set_bitrate(uint32_t bitrate) { this->bitrate_ = bitrate; }
   void set_bitsync(bool bitsync) { this->bitsync_ = bitsync; }
@@ -273,7 +272,6 @@ class SX127x : public Component,
   std::vector<uint8_t> sync_value_;
   InternalGPIOPin *dio0_pin_{nullptr};
   InternalGPIOPin *rst_pin_{nullptr};
-  InternalGPIOPin *nss_pin_{nullptr};
   SX127xStore store_;
   SX127xPaConfig pa_pin_;
   SX127xRxBw rx_bandwidth_;

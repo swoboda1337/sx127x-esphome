@@ -187,7 +187,7 @@ async def to_code(config):
     rst_pin = await cg.gpio_pin_expression(config[CONF_RST_PIN])
     cg.add(var.set_rst_pin(rst_pin))
     nss_pin = await cg.gpio_pin_expression(config[CONF_NSS_PIN])
-    cg.add(var.set_nss_pin(nss_pin))
+    cg.add(var.set_cs_pin(nss_pin))
     cg.add(var.set_frequency(config[CONF_FREQUENCY]))
     cg.add(var.set_modulation(config[CONF_MODULATION]))
     cg.add(var.set_shaping(config[CONF_SHAPING]))
