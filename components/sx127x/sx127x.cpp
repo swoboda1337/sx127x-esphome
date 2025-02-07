@@ -10,17 +10,20 @@ static const uint32_t FXOSC = 32000000u;
 
 void IRAM_ATTR HOT SX127xStore::gpio_intr(SX127xStore *arg) { arg->dio0_irq = true; }
 
-uint8_t SX127x::read_register_(uint8_t reg) { return this->single_transfer_((uint8_t) reg & 0x7F, 0x00); }
-
-void SX127x::write_register_(uint8_t reg, uint8_t value) { this->single_transfer_((uint8_t) reg | 0x80, value); }
-
-uint8_t SX127x::single_transfer_(uint8_t reg, uint8_t value) {
-  uint8_t response;
+uint8_t SX127x::read_register_(uint8_t reg) {
+  uint8_t value;
   this->enable();
-  this->write_byte(reg);
-  response = this->transfer_byte(value);
+  this->write_byte(reg & 0x7F);
+  value = this->read_byte();
   this->disable();
-  return response;
+  return value;
+}
+
+void SX127x::write_register_(uint8_t reg, uint8_t value) {
+  this->enable();
+  this->write_byte(reg | 0x80);
+  this->write_byte(value);
+  this->disable();
 }
 
 void SX127x::read_fifo_(std::vector<uint8_t> &packet) {
