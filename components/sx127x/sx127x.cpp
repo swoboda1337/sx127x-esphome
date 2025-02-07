@@ -13,9 +13,9 @@ void IRAM_ATTR HOT SX127xStore::gpio_intr(SX127xStore *arg) { arg->dio0_irq = tr
 uint8_t SX127x::read_register_(uint8_t reg) {
   this->enable();
   this->write_byte(reg & 0x7F);
-  reg = this->read_byte();
+  uint8_t value = this->read_byte();
   this->disable();
-  return reg;
+  return value;
 }
 
 void SX127x::write_register_(uint8_t reg, uint8_t value) {
