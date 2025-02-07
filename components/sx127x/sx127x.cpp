@@ -11,12 +11,11 @@ static const uint32_t FXOSC = 32000000u;
 void IRAM_ATTR HOT SX127xStore::gpio_intr(SX127xStore *arg) { arg->dio0_irq = true; }
 
 uint8_t SX127x::read_register_(uint8_t reg) {
-  uint8_t value;
   this->enable();
   this->write_byte(reg & 0x7F);
-  value = this->read_byte();
+  reg = this->read_byte();
   this->disable();
-  return value;
+  return reg;
 }
 
 void SX127x::write_register_(uint8_t reg, uint8_t value) {
