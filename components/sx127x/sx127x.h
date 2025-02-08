@@ -52,6 +52,7 @@ enum SX127xReg : uint8_t {
 };
 
 enum SX127xRxConfig : uint8_t {
+  RESTART_ON_COLLISION = 0x80,
   RESTART_NO_LOCK = 0x40,
   RESTART_PLL_LOCK = 0x20,
   AFC_AUTO_ON = 0x10,
@@ -72,9 +73,9 @@ enum SX127xAfcFei : uint8_t {
 };
 
 enum SX127xSyncConfig : uint8_t {
+  AUTO_RESTART_PLL_LOCK = 0x80,
+  AUTO_RESTART_NO_LOCK = 0x40,
   AUTO_RESTART_OFF = 0x00,
-  AUTO_RESTART_NO_LOCK = 0x80,
-  AUTO_RESTART_PLL_LOCK = 0x40,
   PREAMBLE_AA = 0x00,
   PREAMBLE_55 = 0x20,
   SYNC_OFF = 0x00,
@@ -162,6 +163,11 @@ enum SX127xOokAvg : uint8_t {
   OOK_AVG_RESERVED = 0x10,
 };
 
+enum SX127xPacketConfig1 : uint8_t {
+  CRC_ON = 0x10,
+  CRC_OFF = 0x00,
+};
+
 enum SX127xPacketConfig2 : uint8_t {
   CONTINUOUS_MODE = 0x00,
   PACKET_MODE = 0x40,
@@ -236,28 +242,29 @@ class SX127x : public Component,
   void setup() override;
   void loop() override;
   void dump_config() override;
-  void set_dio0_pin(InternalGPIOPin *dio0_pin) { this->dio0_pin_ = dio0_pin; }
-  void set_rst_pin(InternalGPIOPin *rst_pin) { this->rst_pin_ = rst_pin; }
-  void set_frequency(uint32_t frequency) { this->frequency_ = frequency; }
   void set_bitrate(uint32_t bitrate) { this->bitrate_ = bitrate; }
   void set_bitsync(bool bitsync) { this->bitsync_ = bitsync; }
-  void set_modulation(SX127xOpMode modulation) { this->modulation_ = modulation; }
-  void set_shaping(SX127xPaRamp shaping) { this->shaping_ = shaping; }
-  void set_fsk_ramp(SX127xPaRamp ramp) { this->fsk_ramp_ = ramp; }
+  void set_crc_enable(bool crc_enable) { this->crc_enable_ = crc_enable; }
+  void set_dio0_pin(InternalGPIOPin *dio0_pin) { this->dio0_pin_ = dio0_pin; }
+  void set_frequency(uint32_t frequency) { this->frequency_ = frequency; }
   void set_fsk_fdev(uint32_t fdev) { this->fsk_fdev_ = fdev; }
-  void set_rx_start(bool start) { this->rx_start_ = start; }
-  void set_rx_floor(float floor) { this->rx_floor_ = floor; }
-  void set_rx_bandwidth(SX127xRxBw bandwidth) { this->rx_bandwidth_ = bandwidth; }
-  void set_pa_pin(SX127xPaConfig pin) { this->pa_pin_ = pin; }
-  void set_pa_power(uint32_t power) { this->pa_power_ = power; }
-  void set_sync_value(const std::vector<uint8_t> &sync_value) { this->sync_value_ = sync_value; }
-  void set_payload_length(uint8_t payload_length) { this->payload_length_ = payload_length; }
-  void set_preamble_polarity(uint8_t preamble_polarity) { this->preamble_polarity_ = preamble_polarity; }
-  void set_preamble_size(uint8_t preamble_size) { this->preamble_size_ = preamble_size; }
-  void set_preamble_errors(uint8_t preamble_errors) { this->preamble_errors_ = preamble_errors; }
+  void set_fsk_ramp(SX127xPaRamp ramp) { this->fsk_ramp_ = ramp; }
+  void set_mode_rx();
   void set_mode_standby();
   void set_mode_tx();
-  void set_mode_rx();
+  void set_modulation(SX127xOpMode modulation) { this->modulation_ = modulation; }
+  void set_pa_pin(SX127xPaConfig pin) { this->pa_pin_ = pin; }
+  void set_pa_power(uint32_t power) { this->pa_power_ = power; }
+  void set_payload_length(uint8_t payload_length) { this->payload_length_ = payload_length; }
+  void set_preamble_errors(uint8_t preamble_errors) { this->preamble_errors_ = preamble_errors; }
+  void set_preamble_polarity(uint8_t preamble_polarity) { this->preamble_polarity_ = preamble_polarity; }
+  void set_preamble_size(uint8_t preamble_size) { this->preamble_size_ = preamble_size; }
+  void set_rst_pin(InternalGPIOPin *rst_pin) { this->rst_pin_ = rst_pin; }
+  void set_rx_bandwidth(SX127xRxBw bandwidth) { this->rx_bandwidth_ = bandwidth; }
+  void set_rx_floor(float floor) { this->rx_floor_ = floor; }
+  void set_rx_start(bool start) { this->rx_start_ = start; }
+  void set_shaping(SX127xPaRamp shaping) { this->shaping_ = shaping; }
+  void set_sync_value(const std::vector<uint8_t> &sync_value) { this->sync_value_ = sync_value; }
   void configure();
   void transmit_packet(const std::vector<uint8_t> &packet);
   Trigger<std::vector<uint8_t>> *get_packet_trigger() const { return this->packet_trigger_; };
@@ -286,10 +293,10 @@ class SX127x : public Component,
   uint8_t preamble_polarity_;
   uint8_t preamble_size_;
   uint8_t preamble_errors_;
-  uint8_t rx_config_;
   float rx_floor_;
   bool rx_start_;
   bool bitsync_;
+  bool crc_enable_;
 };
 
 }  // namespace sx127x

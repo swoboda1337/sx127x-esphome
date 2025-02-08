@@ -105,14 +105,17 @@ void SX127x::configure() {
   uint8_t trigger = (this->preamble_size_ > 0) ? TRIGGER_PREAMBLE : TRIGGER_RSSI;
   this->write_register_(REG_AFC_FEI, AFC_AUTO_CLEAR_ON);
   if (this->modulation_ == MOD_FSK) {
-    this->rx_config_ = AFC_AUTO_ON | AGC_AUTO_ON | trigger;
+    this->write_register_(REG_RX_CONFIG, AFC_AUTO_ON | AGC_AUTO_ON | trigger);
   } else {
-    this->rx_config_ = AGC_AUTO_ON | trigger;
+    this->write_register_(REG_RX_CONFIG, AGC_AUTO_ON | trigger);
   }
-  this->write_register_(REG_RX_CONFIG, this->rx_config_);
 
   // configure packet mode
-  this->write_register_(REG_PACKET_CONFIG_1, 0x00);
+  if (this->crc_enable_) {
+    this->write_register_(REG_PACKET_CONFIG_1, CRC_ON);
+  } else {
+    this->write_register_(REG_PACKET_CONFIG_1, CRC_OFF);
+  }
   if (this->payload_length_ > 0) {
     this->write_register_(REG_PACKET_CONFIG_2, PACKET_MODE);
   } else {
@@ -133,15 +136,15 @@ void SX127x::configure() {
   this->write_register_(REG_FIFO_THRESH, TX_START_FIFO_EMPTY);
 
   // config bit synchronizer
+  uint8_t polarity = (this->preamble_polarity_ == 0xAA) ? PREAMBLE_AA : PREAMBLE_55;
   if (!this->sync_value_.empty()) {
-    uint8_t polarity = (this->preamble_polarity_ == 0xAA) ? PREAMBLE_AA : PREAMBLE_55;
     uint8_t size = this->sync_value_.size() - 1;
-    this->write_register_(REG_SYNC_CONFIG, SYNC_ON | polarity | size);
+    this->write_register_(REG_SYNC_CONFIG, AUTO_RESTART_PLL_LOCK | polarity | SYNC_ON | size);
     for (uint32_t i = 0; i < this->sync_value_.size(); i++) {
       this->write_register_(REG_SYNC_VALUE1 + i, this->sync_value_[i]);
     }
   } else {
-    this->write_register_(REG_SYNC_CONFIG, SYNC_OFF);
+    this->write_register_(REG_SYNC_CONFIG, AUTO_RESTART_PLL_LOCK | polarity);
   }
 
   // config preamble detector
@@ -204,7 +207,6 @@ void SX127x::loop() {
     std::vector<uint8_t> packet(this->payload_length_);
     this->store_.dio0_irq = false;
     this->read_fifo_(packet);
-    this->write_register_(REG_RX_CONFIG, RESTART_PLL_LOCK | this->rx_config_);
     this->packet_trigger_->trigger(packet);
   }
 }
@@ -234,7 +236,7 @@ void SX127x::dump_config() {
   uint32_t rx_bw_exp = this->rx_bandwidth_ & 0x7;
   float rx_bw = (float) FXOSC / (rx_bw_mant * (1 << (rx_bw_exp + 2)));
   ESP_LOGCONFIG(TAG, "SX127x:");
-  LOG_PIN("  NSS Pin: ", this->cs_);
+  LOG_PIN("  CS Pin: ", this->cs_);
   LOG_PIN("  RST Pin: ", this->rst_pin_);
   LOG_PIN("  DIO0 Pin: ", this->dio0_pin_);
   ESP_LOGCONFIG(TAG, "  Frequency: %f MHz", (float) this->frequency_ / 1000000);
@@ -244,24 +246,29 @@ void SX127x::dump_config() {
   ESP_LOGCONFIG(TAG, "  Rx Bandwidth: %.1f kHz", (float) rx_bw / 1000);
   ESP_LOGCONFIG(TAG, "  Rx Start: %s", TRUEFALSE(this->rx_start_));
   ESP_LOGCONFIG(TAG, "  Rx Floor: %.1f dBm", this->rx_floor_);
-  ESP_LOGCONFIG(TAG, "  Payload Length: %" PRIu32, this->payload_length_);
-  ESP_LOGCONFIG(TAG, "  Preamble Polarity: 0x%X", this->preamble_polarity_);
-  ESP_LOGCONFIG(TAG, "  Preamble Size: %" PRIu8, this->preamble_size_);
-  ESP_LOGCONFIG(TAG, "  Preamble Errors: %" PRIu8, this->preamble_errors_);
-  if (!this->sync_value_.empty()) {
-    ESP_LOGCONFIG(TAG, "  Sync Value: 0x%s", format_hex(this->sync_value_).c_str());
+  if (this->preamble_size_ > 0) {
+    ESP_LOGCONFIG(TAG, "  Preamble Size: %" PRIu8, this->preamble_size_);
+    ESP_LOGCONFIG(TAG, "  Preamble Polarity: 0x%X", this->preamble_polarity_);
+    ESP_LOGCONFIG(TAG, "  Preamble Errors: %" PRIu8, this->preamble_errors_);
+  }
+  if (this->payload_length_ > 0) {
+    ESP_LOGCONFIG(TAG, "  Payload Length: %" PRIu32, this->payload_length_);
+    ESP_LOGCONFIG(TAG, "  CRC Enable: %s", TRUEFALSE(this->crc_enable_));
+    if (!this->sync_value_.empty()) {
+      ESP_LOGCONFIG(TAG, "  Sync Value: 0x%s", format_hex(this->sync_value_).c_str());
+    }
   }
   if (this->modulation_ == MOD_FSK) {
     static const char *shaping_lut[4] = {"NONE", "GAUSSIAN_BT_1_0", "GAUSSIAN_BT_0_5", "GAUSSIAN_BT_0_3"};
     ESP_LOGCONFIG(TAG, "  Shaping: %s", shaping_lut[this->shaping_ >> SHAPING_SHIFT]);
+    ESP_LOGCONFIG(TAG, "  FSK Fdev: %" PRIu32 " Hz", this->fsk_fdev_);
+    ESP_LOGCONFIG(TAG, "  FSK Ramp: %" PRIu16 " us", RAMP_LUT[this->fsk_ramp_]);
   } else {
     static const char *shaping_lut[4] = {"NONE", "CUTOFF_BR_X_1", "CUTOFF_BR_X_2", "ERROR"};
     ESP_LOGCONFIG(TAG, "  Shaping: %s", shaping_lut[this->shaping_ >> SHAPING_SHIFT]);
   }
   ESP_LOGCONFIG(TAG, "  PA Pin: %s", this->pa_pin_ == PA_PIN_BOOST ? "BOOST" : "RFO");
   ESP_LOGCONFIG(TAG, "  PA Power: %" PRIu32 " dBm", this->pa_power_);
-  ESP_LOGCONFIG(TAG, "  FSK Fdev: %" PRIu32 " Hz", this->fsk_fdev_);
-  ESP_LOGCONFIG(TAG, "  FSK Ramp: %" PRIu16 " us", RAMP_LUT[this->fsk_ramp_]);
   if (this->is_failed()) {
     ESP_LOGE(TAG, "Configuring SX127x failed");
   }

@@ -8,26 +8,26 @@ MULTI_CONF = True
 CODEOWNERS = ["@swoboda1337"]
 DEPENDENCIES = ["spi"]
 
-CONF_PA_POWER = "pa_power"
-CONF_PA_PIN = "pa_pin"
-CONF_DIO0_PIN = "dio0_pin"
-CONF_NSS_PIN = "nss_pin"
-CONF_RST_PIN = "rst_pin"
-CONF_MODULATION = "modulation"
-CONF_SHAPING = "shaping"
-CONF_RX_FLOOR = "rx_floor"
-CONF_RX_START = "rx_start"
-CONF_RX_BANDWIDTH = "rx_bandwidth"
 CONF_BITRATE = "bitrate"
 CONF_BITSYNC = "bitsync"
-CONF_PAYLOAD_LENGTH = "payload_length"
-CONF_PREAMBLE_SIZE = "preamble_size"
-CONF_PREAMBLE_POLARITY = "preamble_polarity"
-CONF_PREAMBLE_ERRORS = "preamble_errors"
-CONF_SYNC_VALUE = "sync_value"
+CONF_CRC_ENABLE = "crc_enable"
+CONF_DIO0_PIN = "dio0_pin"
 CONF_FSK_FDEV = "fsk_fdev"
 CONF_FSK_RAMP = "fsk_ramp"
+CONF_MODULATION = "modulation"
 CONF_ON_PACKET = "on_packet"
+CONF_PA_PIN = "pa_pin"
+CONF_PA_POWER = "pa_power"
+CONF_PAYLOAD_LENGTH = "payload_length"
+CONF_PREAMBLE_ERRORS = "preamble_errors"
+CONF_PREAMBLE_POLARITY = "preamble_polarity"
+CONF_PREAMBLE_SIZE = "preamble_size"
+CONF_RST_PIN = "rst_pin"
+CONF_RX_BANDWIDTH = "rx_bandwidth"
+CONF_RX_FLOOR = "rx_floor"
+CONF_RX_START = "rx_start"
+CONF_SHAPING = "shaping"
+CONF_SYNC_VALUE = "sync_value"
 
 sx127x_ns = cg.esphome_ns.namespace("sx127x")
 SX127x = sx127x_ns.class_("SX127x", cg.Component, spi.SPIDevice)
@@ -140,33 +140,33 @@ CONFIG_SCHEMA = cv.All(
     cv.Schema(
         {
             cv.GenerateID(): cv.declare_id(SX127x),
-            cv.Optional(CONF_DIO0_PIN): pins.internal_gpio_input_pin_schema,
-            cv.Required(CONF_RST_PIN): pins.internal_gpio_output_pin_schema,
-            cv.Required(CONF_NSS_PIN): pins.internal_gpio_output_pin_schema,
-            cv.Required(CONF_FREQUENCY): cv.int_range(min=137000000, max=1020000000),
-            cv.Required(CONF_MODULATION): cv.enum(MOD),
-            cv.Optional(CONF_SHAPING, default="NONE"): cv.enum(SHAPING),
             cv.Optional(CONF_BITRATE): cv.int_range(min=500, max=300000),
             cv.Optional(CONF_BITSYNC): cv.boolean,
+            cv.Optional(CONF_CRC_ENABLE, default=False): cv.boolean,
+            cv.Optional(CONF_DIO0_PIN): pins.internal_gpio_input_pin_schema,
+            cv.Required(CONF_FREQUENCY): cv.int_range(min=137000000, max=1020000000),
             cv.Optional(CONF_FSK_FDEV, default=5000): cv.int_range(min=0, max=100000),
             cv.Optional(CONF_FSK_RAMP, default="40us"): cv.enum(RAMP),
-            cv.Optional(CONF_SYNC_VALUE, default=[]): cv.ensure_list(cv.hex_uint8_t),
+            cv.Required(CONF_MODULATION): cv.enum(MOD),
+            cv.Optional(CONF_ON_PACKET): automation.validate_automation(single=True),
+            cv.Optional(CONF_PA_PIN, default="BOOST"): cv.enum(PA_PIN),
+            cv.Optional(CONF_PA_POWER, default=17): cv.int_range(min=0, max=17),
             cv.Optional(CONF_PAYLOAD_LENGTH, default=0): cv.int_range(min=0, max=64),
-            cv.Optional(CONF_PREAMBLE_SIZE, default=0): cv.int_range(min=0, max=7),
+            cv.Optional(CONF_PREAMBLE_ERRORS, default=0): cv.int_range(min=0, max=31),
             cv.Optional(CONF_PREAMBLE_POLARITY, default=0xAA): cv.All(
                 cv.hex_int, cv.one_of(0xAA, 0x55)
             ),
-            cv.Optional(CONF_PREAMBLE_ERRORS, default=0): cv.int_range(min=0, max=31),
+            cv.Optional(CONF_PREAMBLE_SIZE, default=0): cv.int_range(min=0, max=7),
+            cv.Required(CONF_RST_PIN): pins.internal_gpio_output_pin_schema,
+            cv.Optional(CONF_RX_BANDWIDTH, default="50_0kHz"): cv.enum(RX_BW),
             cv.Optional(CONF_RX_FLOOR, default=-94): cv.float_range(min=-128, max=-1),
             cv.Optional(CONF_RX_START, default=True): cv.boolean,
-            cv.Optional(CONF_RX_BANDWIDTH, default="50_0kHz"): cv.enum(RX_BW),
-            cv.Optional(CONF_PA_PIN, default="BOOST"): cv.enum(PA_PIN),
-            cv.Optional(CONF_PA_POWER, default=17): cv.int_range(min=0, max=17),
-            cv.Optional(CONF_ON_PACKET): automation.validate_automation(single=True),
+            cv.Optional(CONF_SHAPING, default="NONE"): cv.enum(SHAPING),
+            cv.Optional(CONF_SYNC_VALUE, default=[]): cv.ensure_list(cv.hex_uint8_t),
         },
     )
     .extend(cv.COMPONENT_SCHEMA)
-    .extend(spi.spi_device_schema(False, 8e6, "mode0")),
+    .extend(spi.spi_device_schema(True, 8e6, "mode0")),
     validate_config,
 )
 
@@ -186,8 +186,6 @@ async def to_code(config):
         cg.add(var.set_dio0_pin(dio0_pin))
     rst_pin = await cg.gpio_pin_expression(config[CONF_RST_PIN])
     cg.add(var.set_rst_pin(rst_pin))
-    nss_pin = await cg.gpio_pin_expression(config[CONF_NSS_PIN])
-    cg.add(var.set_cs_pin(nss_pin))
     cg.add(var.set_frequency(config[CONF_FREQUENCY]))
     cg.add(var.set_modulation(config[CONF_MODULATION]))
     cg.add(var.set_shaping(config[CONF_SHAPING]))
@@ -199,6 +197,7 @@ async def to_code(config):
         cg.add(var.set_bitsync(config[CONF_BITSYNC]))
     else:
         cg.add(var.set_bitsync(False))
+    cg.add(var.set_crc_enable(config[CONF_CRC_ENABLE]))
     cg.add(var.set_payload_length(config[CONF_PAYLOAD_LENGTH]))
     cg.add(var.set_preamble_size(config[CONF_PREAMBLE_SIZE]))
     cg.add(var.set_preamble_polarity(config[CONF_PREAMBLE_POLARITY]))
