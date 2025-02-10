@@ -71,8 +71,8 @@ void SX127x::configure() {
     return;
   }
 
-  // set modulation and make sure transceiver is in sleep mode
-  this->write_register_(REG_OP_MODE, this->modulation_ | MODE_SLEEP);
+  // switch to FSK and put transceiver to sleep
+  this->write_register_(REG_OP_MODE, MOD_FSK | MODE_SLEEP);
   delay(1);
 
   // set freq
@@ -80,6 +80,33 @@ void SX127x::configure() {
   this->write_register_(REG_FRF_MSB, (uint8_t) ((frf >> 16) & 0xFF));
   this->write_register_(REG_FRF_MID, (uint8_t) ((frf >> 8) & 0xFF));
   this->write_register_(REG_FRF_LSB, (uint8_t) ((frf >> 0) & 0xFF));
+
+  // run image cal, set actual modulation and go back to sleep
+  this->write_register_(REG_OP_MODE, MOD_FSK | MODE_STDBY);
+  delay(1);
+  this->write_register_(REG_IMAGE_CAL, AUTO_IMAGE_CAL_ON | IMAGE_CAL_START | TEMP_THRESHOLD_10C);
+  delay(12);
+  this->write_register_(REG_OP_MODE, this->modulation_ | MODE_SLEEP);
+  delay(1);
+
+  // configure dio mapping and clear irq flag
+  this->store_.dio0_irq = false;
+  if (this->payload_length_ > 0) {
+    this->write_register_(REG_DIO_MAPPING1, DIO0_MAPPING_00);
+  } else {
+    this->write_register_(REG_DIO_MAPPING1, DIO0_MAPPING_11);
+  }
+
+  // config pa
+  if (this->pa_pin_ == PA_PIN_BOOST) {
+    this->pa_power_ = std::max(this->pa_power_, (uint32_t) 2);
+    this->pa_power_ = std::min(this->pa_power_, (uint32_t) 17);
+    this->write_register_(REG_PA_CONFIG, (this->pa_power_ - 2) | this->pa_pin_ | PA_MAX_POWER);
+  } else {
+    this->pa_power_ = std::min(this->pa_power_, (uint32_t) 14);
+    this->write_register_(REG_PA_CONFIG, (this->pa_power_ - 0) | this->pa_pin_ | PA_MAX_POWER);
+  }
+  this->write_register_(REG_PA_RAMP, this->shaping_ | this->fsk_ramp_);
 
   // set fdev
   uint32_t fdev = std::min(this->fsk_fdev_ / 61, (uint32_t) 0x3FFF);
@@ -93,13 +120,6 @@ void SX127x::configure() {
   uint64_t bitrate = (FXOSC + this->bitrate_ / 2) / this->bitrate_;  // round up
   this->write_register_(REG_BITRATE_MSB, (uint8_t) ((bitrate >> 8) & 0xFF));
   this->write_register_(REG_BITRATE_LSB, (uint8_t) ((bitrate >> 0) & 0xFF));
-
-  // configure dio mapping
-  if (this->payload_length_ > 0) {
-    this->write_register_(REG_DIO_MAPPING1, DIO0_MAPPING_00);
-  } else {
-    this->write_register_(REG_DIO_MAPPING1, DIO0_MAPPING_11);
-  }
 
   // configure rx and afc
   uint8_t trigger = (this->preamble_size_ > 0) ? TRIGGER_PREAMBLE : TRIGGER_RSSI;
@@ -122,17 +142,6 @@ void SX127x::configure() {
     this->write_register_(REG_PACKET_CONFIG_2, CONTINUOUS_MODE);
   }
   this->write_register_(REG_PAYLOAD_LENGTH, this->payload_length_);
-
-  // config pa
-  if (this->pa_pin_ == PA_PIN_BOOST) {
-    this->pa_power_ = std::max(this->pa_power_, (uint32_t) 2);
-    this->pa_power_ = std::min(this->pa_power_, (uint32_t) 17);
-    this->write_register_(REG_PA_CONFIG, (this->pa_power_ - 2) | this->pa_pin_ | PA_MAX_POWER);
-  } else {
-    this->pa_power_ = std::min(this->pa_power_, (uint32_t) 14);
-    this->write_register_(REG_PA_CONFIG, (this->pa_power_ - 0) | this->pa_pin_ | PA_MAX_POWER);
-  }
-  this->write_register_(REG_PA_RAMP, this->shaping_ | this->fsk_ramp_);
   this->write_register_(REG_FIFO_THRESH, TX_START_FIFO_EMPTY);
 
   // config bit synchronizer
@@ -167,15 +176,8 @@ void SX127x::configure() {
   this->write_register_(REG_OOK_FIX, 256 + int(this->rx_floor_ * 2.0));
   this->write_register_(REG_RSSI_THRESH, std::abs(int(this->rx_floor_ * 2.0)));
 
-  // clear irq flag
-  this->store_.dio0_irq = false;
-
   // enable standby mode
   this->set_mode_standby();
-
-  // run image cal
-  this->write_register_(REG_IMAGE_CAL, AUTO_IMAGE_CAL_ON | IMAGE_CAL_START | TEMP_THRESHOLD_10C);
-  delay(10);
 
   // enable rx mode
   if (this->rx_start_) {
