@@ -70,6 +70,7 @@ RAMP = {
 }
 
 MOD = {
+    "LORA": SX127xOpMode.MOD_LORA,
     "FSK": SX127xOpMode.MOD_FSK,
     "OOK": SX127xOpMode.MOD_OOK,
 }
@@ -96,6 +97,7 @@ RX_BW = {
     "166_7kHz": SX127xRxBw.RX_BW_166_7,
     "200_0kHz": SX127xRxBw.RX_BW_200_0,
     "250_0kHz": SX127xRxBw.RX_BW_250_0,
+    "500_0kHz": SX127xRxBw.RX_BW_500_0,
 }
 
 SendPacketAction = sx127x_ns.class_(

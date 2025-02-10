@@ -95,10 +95,14 @@ enum SX127xImageCal : uint8_t {
 };
 
 enum SX127xOpMode : uint8_t {
-  MOD_FSK = 0x00,
+  MOD_LORA = 0x80,
+  ACCESS_FSK_REGS = 0x40,
   MOD_OOK = 0x20,
-  MODE_LF_ON = 0x08,
-  MODE_RX = 0x05,
+  MOD_FSK = 0x00,
+  ACCESS_LF_REGS = 0x08,
+  MODE_CAD = 0x07,
+  MODE_RX_SINGLE = 0x06,
+  MODE_RX_CONT = 0x05,
   MODE_RX_FS = 0x04,
   MODE_TX = 0x03,
   MODE_TX_FS = 0x02,
@@ -195,6 +199,7 @@ enum SX127xRxBw : uint8_t {
   RX_BW_166_7 = 0x11,
   RX_BW_200_0 = 0x09,
   RX_BW_250_0 = 0x01,
+  RX_BW_500_0 = 0x00,
 };
 
 enum SX127xPaRamp : uint8_t {

@@ -219,7 +219,7 @@ void SX127x::set_mode_standby() {
 void SX127x::set_mode_rx() {
   this->write_register_(REG_OP_MODE, this->modulation_ | MODE_RX_FS);
   delay(1);
-  this->write_register_(REG_OP_MODE, this->modulation_ | MODE_RX);
+  this->write_register_(REG_OP_MODE, this->modulation_ | MODE_RX_CONT);
   delay(1);
 }
 
