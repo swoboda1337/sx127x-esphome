@@ -108,73 +108,76 @@ void SX127x::configure() {
   }
   this->write_register_(REG_PA_RAMP, this->shaping_ | this->fsk_ramp_);
 
-  // set fdev
-  uint32_t fdev = std::min(this->fsk_fdev_ / 61, (uint32_t) 0x3FFF);
-  this->write_register_(REG_FDEV_MSB, (uint8_t) ((fdev >> 8) & 0xFF));
-  this->write_register_(REG_FDEV_LSB, (uint8_t) ((fdev >> 0) & 0xFF));
-
-  // set the channel bw
-  this->write_register_(REG_RX_BW, this->rx_bandwidth_);
-
-  // set bitrate
-  uint64_t bitrate = (FXOSC + this->bitrate_ / 2) / this->bitrate_;  // round up
-  this->write_register_(REG_BITRATE_MSB, (uint8_t) ((bitrate >> 8) & 0xFF));
-  this->write_register_(REG_BITRATE_LSB, (uint8_t) ((bitrate >> 0) & 0xFF));
-
-  // configure rx and afc
-  uint8_t trigger = (this->preamble_size_ > 0) ? TRIGGER_PREAMBLE : TRIGGER_RSSI;
-  this->write_register_(REG_AFC_FEI, AFC_AUTO_CLEAR_ON);
-  if (this->modulation_ == MOD_FSK) {
-    this->write_register_(REG_RX_CONFIG, AFC_AUTO_ON | AGC_AUTO_ON | trigger);
+  if (this->modulation_ == MOD_LORA) {
   } else {
-    this->write_register_(REG_RX_CONFIG, AGC_AUTO_ON | trigger);
-  }
+    // set fdev
+    uint32_t fdev = std::min(this->fsk_fdev_ / 61, (uint32_t) 0x3FFF);
+    this->write_register_(REG_FDEV_MSB, (uint8_t) ((fdev >> 8) & 0xFF));
+    this->write_register_(REG_FDEV_LSB, (uint8_t) ((fdev >> 0) & 0xFF));
 
-  // configure packet mode
-  if (this->crc_enable_) {
-    this->write_register_(REG_PACKET_CONFIG_1, CRC_ON);
-  } else {
-    this->write_register_(REG_PACKET_CONFIG_1, CRC_OFF);
-  }
-  if (this->payload_length_ > 0) {
-    this->write_register_(REG_PACKET_CONFIG_2, PACKET_MODE);
-  } else {
-    this->write_register_(REG_PACKET_CONFIG_2, CONTINUOUS_MODE);
-  }
-  this->write_register_(REG_PAYLOAD_LENGTH, this->payload_length_);
-  this->write_register_(REG_FIFO_THRESH, TX_START_FIFO_EMPTY);
+    // set the channel bw
+    this->write_register_(REG_RX_BW, this->rx_bandwidth_);
 
-  // config bit synchronizer
-  uint8_t polarity = (this->preamble_polarity_ == 0xAA) ? PREAMBLE_AA : PREAMBLE_55;
-  if (!this->sync_value_.empty()) {
-    uint8_t size = this->sync_value_.size() - 1;
-    this->write_register_(REG_SYNC_CONFIG, AUTO_RESTART_PLL_LOCK | polarity | SYNC_ON | size);
-    for (uint32_t i = 0; i < this->sync_value_.size(); i++) {
-      this->write_register_(REG_SYNC_VALUE1 + i, this->sync_value_[i]);
+    // set bitrate
+    uint64_t bitrate = (FXOSC + this->bitrate_ / 2) / this->bitrate_;  // round up
+    this->write_register_(REG_BITRATE_MSB, (uint8_t) ((bitrate >> 8) & 0xFF));
+    this->write_register_(REG_BITRATE_LSB, (uint8_t) ((bitrate >> 0) & 0xFF));
+
+    // configure rx and afc
+    uint8_t trigger = (this->preamble_size_ > 0) ? TRIGGER_PREAMBLE : TRIGGER_RSSI;
+    this->write_register_(REG_AFC_FEI, AFC_AUTO_CLEAR_ON);
+    if (this->modulation_ == MOD_FSK) {
+      this->write_register_(REG_RX_CONFIG, AFC_AUTO_ON | AGC_AUTO_ON | trigger);
+    } else {
+      this->write_register_(REG_RX_CONFIG, AGC_AUTO_ON | trigger);
     }
-  } else {
-    this->write_register_(REG_SYNC_CONFIG, AUTO_RESTART_PLL_LOCK | polarity);
+
+    // configure packet mode
+    if (this->crc_enable_) {
+      this->write_register_(REG_PACKET_CONFIG_1, CRC_ON);
+    } else {
+      this->write_register_(REG_PACKET_CONFIG_1, CRC_OFF);
+    }
+    if (this->payload_length_ > 0) {
+      this->write_register_(REG_PACKET_CONFIG_2, PACKET_MODE);
+    } else {
+      this->write_register_(REG_PACKET_CONFIG_2, CONTINUOUS_MODE);
+    }
+    this->write_register_(REG_PAYLOAD_LENGTH, this->payload_length_);
+    this->write_register_(REG_FIFO_THRESH, TX_START_FIFO_EMPTY);
+
+    // config bit synchronizer
+    uint8_t polarity = (this->preamble_polarity_ == 0xAA) ? PREAMBLE_AA : PREAMBLE_55;
+    if (!this->sync_value_.empty()) {
+      uint8_t size = this->sync_value_.size() - 1;
+      this->write_register_(REG_SYNC_CONFIG, AUTO_RESTART_PLL_LOCK | polarity | SYNC_ON | size);
+      for (uint32_t i = 0; i < this->sync_value_.size(); i++) {
+        this->write_register_(REG_SYNC_VALUE1 + i, this->sync_value_[i]);
+      }
+    } else {
+      this->write_register_(REG_SYNC_CONFIG, AUTO_RESTART_PLL_LOCK | polarity);
+    }
+
+    // config preamble detector
+    if (this->preamble_size_ > 0 && this->preamble_size_ < 4) {
+      uint8_t size = (this->preamble_size_ - 1) << PREAMBLE_BYTES_SHIFT;
+      uint8_t errors = this->preamble_errors_;
+      this->write_register_(REG_PREAMBLE_DETECT, PREAMBLE_DETECTOR_ON | size | errors);
+    } else {
+      this->write_register_(REG_PREAMBLE_DETECT, PREAMBLE_DETECTOR_OFF);
+    }
+    this->write_register_(REG_PREAMBLE_MSB, 0);
+    this->write_register_(REG_PREAMBLE_LSB, this->preamble_size_);
+
+    // config sync generation and setup ook threshold
+    uint8_t bitsync = this->bitsync_ ? BIT_SYNC_ON : BIT_SYNC_OFF;
+    this->write_register_(REG_OOK_PEAK, bitsync | OOK_THRESH_STEP_0_5 | OOK_THRESH_PEAK);
+    this->write_register_(REG_OOK_AVG, OOK_AVG_RESERVED | OOK_THRESH_DEC_1_8);
+
+    // set rx floor
+    this->write_register_(REG_OOK_FIX, 256 + int(this->rx_floor_ * 2.0));
+    this->write_register_(REG_RSSI_THRESH, std::abs(int(this->rx_floor_ * 2.0)));
   }
-
-  // config preamble detector
-  if (this->preamble_size_ > 0 && this->preamble_size_ < 4) {
-    uint8_t size = (this->preamble_size_ - 1) << PREAMBLE_BYTES_SHIFT;
-    uint8_t errors = this->preamble_errors_;
-    this->write_register_(REG_PREAMBLE_DETECT, PREAMBLE_DETECTOR_ON | size | errors);
-  } else {
-    this->write_register_(REG_PREAMBLE_DETECT, PREAMBLE_DETECTOR_OFF);
-  }
-  this->write_register_(REG_PREAMBLE_MSB, 0);
-  this->write_register_(REG_PREAMBLE_LSB, this->preamble_size_);
-
-  // config sync generation and setup ook threshold
-  uint8_t bitsync = this->bitsync_ ? BIT_SYNC_ON : BIT_SYNC_OFF;
-  this->write_register_(REG_OOK_PEAK, bitsync | OOK_THRESH_STEP_0_5 | OOK_THRESH_PEAK);
-  this->write_register_(REG_OOK_AVG, OOK_AVG_RESERVED | OOK_THRESH_DEC_1_8);
-
-  // set rx floor
-  this->write_register_(REG_OOK_FIX, 256 + int(this->rx_floor_ * 2.0));
-  this->write_register_(REG_RSSI_THRESH, std::abs(int(this->rx_floor_ * 2.0)));
 
   // enable standby mode
   this->set_mode_standby();
