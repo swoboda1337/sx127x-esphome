@@ -121,6 +121,26 @@ def validate_raw_data(value):
 
 
 def validate_config(config):
+    bws = [
+        "7_8kHz",
+        "10_4kHz",
+        "15_6kHz",
+        "20_8kHz",
+        "31_3kHz",
+        "41_7kHz",
+        "62_5kHz",
+        "125_0kHz",
+        "250_0kHz",
+        "500_0kHz",
+    ]
+    if config[CONF_MODULATION] == "LORA" and config[CONF_RX_BANDWIDTH] not in bws:
+        raise cv.Invalid(
+            f"Bandwidth {config[CONF_RX_BANDWIDTH]} is not available with LORA"
+        )
+    if config[CONF_MODULATION] != "LORA" and config[CONF_RX_BANDWIDTH] == "500_0kHz":
+        raise cv.Invalid(
+            f"Bandwidth {config[CONF_RX_BANDWIDTH]} is only available with LORA"
+        )
     if config[CONF_PAYLOAD_LENGTH] > 0 and CONF_DIO0_PIN not in config:
         raise cv.Invalid("Cannot use packet mode without dio0_pin")
     if config[CONF_PAYLOAD_LENGTH] > 0 and config[CONF_BITRATE] == 0:
