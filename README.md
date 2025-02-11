@@ -9,3 +9,9 @@ https://deploy-preview-4278--esphome.netlify.app/components/sx127x
 ESPHome PR:
 
 https://github.com/esphome/esphome/pull/7490
+
+To use the PR:
+
+	external_components:
+	  - source: github://pr#7490
+	    components: [ sx127x ]
