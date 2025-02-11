@@ -87,7 +87,6 @@ void SX127x::configure() {
   delay(1);
 
   // configure dio mapping and clear irq flag
-  this->store_.dio0_irq = false;
   if (this->payload_length_ > 0) {
     this->write_register_(REG_DIO_MAPPING1, DIO0_MAPPING_00);
   } else {
