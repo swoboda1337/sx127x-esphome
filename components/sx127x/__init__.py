@@ -135,11 +135,11 @@ def validate_config(config):
     ]
     if config[CONF_MODULATION] == "LORA" and config[CONF_RX_BANDWIDTH] not in bws:
         raise cv.Invalid(
-            f"Bandwidth {config[CONF_RX_BANDWIDTH]} is not available with LORA"
+            f"Bandwidth {config[CONF_RX_BANDWIDTH]} is not allowed with LORA"
         )
     if config[CONF_MODULATION] != "LORA" and config[CONF_RX_BANDWIDTH] == "500_0kHz":
         raise cv.Invalid(
-            f"Bandwidth {config[CONF_RX_BANDWIDTH]} is only available with LORA"
+            f"Bandwidth {config[CONF_RX_BANDWIDTH]} is only allowed with LORA"
         )
     if config[CONF_PAYLOAD_LENGTH] > 0 and CONF_DIO0_PIN not in config:
         raise cv.Invalid("Cannot use packet mode without dio0_pin")
