@@ -8,8 +8,6 @@ namespace sx127x {
 static const char *const TAG = "sx127x";
 static const uint32_t FXOSC = 32000000u;
 
-void IRAM_ATTR HOT SX127xStore::gpio_intr(SX127xStore *arg) { arg->dio0_irq = true; }
-
 uint8_t SX127x::read_register_(uint8_t reg) {
   this->enable();
   this->write_byte(reg & 0x7F);
@@ -48,7 +46,6 @@ void SX127x::setup() {
   // setup dio0
   if (this->dio0_pin_) {
     this->dio0_pin_->setup();
-    this->dio0_pin_->attach_interrupt(SX127xStore::gpio_intr, &this->store_, gpio::INTERRUPT_RISING_EDGE);
   }
 
   // start spi
@@ -167,9 +164,6 @@ void SX127x::configure() {
   this->write_register_(REG_OOK_FIX, 256 + int(this->rx_floor_ * 2.0));
   this->write_register_(REG_RSSI_THRESH, std::abs(int(this->rx_floor_ * 2.0)));
 
-  // clear irq flag
-  this->store_.dio0_irq = false;
-
   // enable standby mode
   this->set_mode_standby();
 
@@ -191,10 +185,13 @@ void SX127x::transmit_packet(const std::vector<uint8_t> &packet) {
   this->set_mode_standby();
   this->write_fifo_(packet);
   this->set_mode_tx();
-  while (!this->store_.dio0_irq) {
-    // do nothing
+  uint32_t start = millis();
+  while (!this->dio0_pin_->digital_read()) {
+    if (millis() - start > 1000) {
+      ESP_LOGE(TAG, "Transmit packet failure");
+      break;
+    }
   }
-  this->store_.dio0_irq = false;
   if (this->rx_start_) {
     this->set_mode_rx();
   } else {
@@ -203,9 +200,8 @@ void SX127x::transmit_packet(const std::vector<uint8_t> &packet) {
 }
 
 void SX127x::loop() {
-  if (this->store_.dio0_irq && this->payload_length_ > 0) {
+  if (this->payload_length_ > 0 && this->dio0_pin_->digital_read()) {
     std::vector<uint8_t> packet(this->payload_length_);
-    this->store_.dio0_irq = false;
     this->read_fifo_(packet);
     this->packet_trigger_->trigger(packet);
   }

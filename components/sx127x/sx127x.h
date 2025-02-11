@@ -229,11 +229,6 @@ enum SX127xPaConfig : uint8_t {
   PA_MAX_POWER = 0x70,
 };
 
-struct SX127xStore {
-  static void gpio_intr(SX127xStore *arg);
-  volatile bool dio0_irq{false};
-};
-
 class SX127x : public Component,
                public spi::SPIDevice<spi::BIT_ORDER_MSB_FIRST, spi::CLOCK_POLARITY_LOW, spi::CLOCK_PHASE_LEADING,
                                      spi::DATA_RATE_8MHZ> {
@@ -279,7 +274,6 @@ class SX127x : public Component,
   std::vector<uint8_t> sync_value_;
   InternalGPIOPin *dio0_pin_{nullptr};
   InternalGPIOPin *rst_pin_{nullptr};
-  SX127xStore store_;
   SX127xPaConfig pa_pin_;
   SX127xRxBw rx_bandwidth_;
   SX127xOpMode modulation_;
