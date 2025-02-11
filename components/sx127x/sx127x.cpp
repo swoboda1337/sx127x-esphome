@@ -114,6 +114,7 @@ void SX127x::configure() {
     this->write_register_(REG_PACKET_CONFIG_1, CRC_OFF);
   }
   if (this->payload_length_ > 0) {
+    this->write_register_(REG_FIFO_THRESH, TX_START_FIFO_LEVEL | (this->payload_length_ - 1));
     this->write_register_(REG_PACKET_CONFIG_2, PACKET_MODE);
   } else {
     this->write_register_(REG_PACKET_CONFIG_2, CONTINUOUS_MODE);
@@ -130,7 +131,6 @@ void SX127x::configure() {
     this->write_register_(REG_PA_CONFIG, (this->pa_power_ - 0) | this->pa_pin_ | PA_MAX_POWER);
   }
   this->write_register_(REG_PA_RAMP, this->shaping_ | this->fsk_ramp_);
-  this->write_register_(REG_FIFO_THRESH, TX_START_FIFO_EMPTY);
 
   // config bit synchronizer
   uint8_t polarity = (this->preamble_polarity_ == 0xAA) ? PREAMBLE_AA : PREAMBLE_55;
@@ -182,12 +182,11 @@ void SX127x::transmit_packet(const std::vector<uint8_t> &packet) {
     ESP_LOGE(TAG, "Packet size does not match payload length");
     return;
   }
-  this->set_mode_standby();
-  this->write_fifo_(packet);
   this->set_mode_tx();
+  this->write_fifo_(packet);
   uint32_t start = millis();
   while (!this->dio0_pin_->digital_read()) {
-    if (millis() - start > 1000) {
+    if (millis() - start > 2000) {
       ESP_LOGE(TAG, "Transmit packet failure");
       break;
     }
@@ -209,19 +208,19 @@ void SX127x::loop() {
 
 void SX127x::set_mode_standby() {
   this->write_register_(REG_OP_MODE, this->modulation_ | MODE_STDBY);
-  delay(1);
+  delay(10);
 }
 
 void SX127x::set_mode_rx() {
   this->write_register_(REG_OP_MODE, this->modulation_ | MODE_RX_FS);
-  delay(1);
+  delay(10);
   this->write_register_(REG_OP_MODE, this->modulation_ | MODE_RX);
   delay(1);
 }
 
 void SX127x::set_mode_tx() {
   this->write_register_(REG_OP_MODE, this->modulation_ | MODE_TX_FS);
-  delay(1);
+  delay(10);
   this->write_register_(REG_OP_MODE, this->modulation_ | MODE_TX);
   delay(1);
 }
