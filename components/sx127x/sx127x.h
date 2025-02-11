@@ -11,6 +11,7 @@ namespace esphome {
 namespace sx127x {
 
 enum SX127xReg : uint8_t {
+  // Common registers
   REG_FIFO = 0x00,
   REG_OP_MODE = 0x01,
   REG_BITRATE_MSB = 0x02,
@@ -22,6 +23,10 @@ enum SX127xReg : uint8_t {
   REG_FRF_LSB = 0x08,
   REG_PA_CONFIG = 0x09,
   REG_PA_RAMP = 0x0A,
+  REG_DIO_MAPPING1 = 0x40,
+  REG_DIO_MAPPING2 = 0x41,
+  REG_VERSION = 0x42,
+  // FSK/OOK registers
   REG_RX_CONFIG = 0x0D,
   REG_RSSI_THRESH = 0x10,
   REG_RX_BW = 0x12,
@@ -46,9 +51,8 @@ enum SX127xReg : uint8_t {
   REG_PAYLOAD_LENGTH = 0x32,
   REG_FIFO_THRESH = 0x35,
   REG_IMAGE_CAL = 0x3B,
-  REG_DIO_MAPPING1 = 0x40,
-  REG_DIO_MAPPING2 = 0x41,
-  REG_VERSION = 0x42,
+  // LORA registers
+  REG_FIFO_ADDR = 0x0D,
 };
 
 enum SX127xRxConfig : uint8_t {

@@ -194,6 +194,9 @@ void SX127x::transmit_packet(const std::vector<uint8_t> &packet) {
     return;
   }
   this->set_mode_standby();
+  if (this->modulation_ == MOD_LORA) {
+    this->write_register_(REG_FIFO_ADDR, 0x80);
+  }
   this->write_fifo_(packet);
   this->set_mode_tx();
   while (!this->store_.dio0_irq) {
@@ -211,6 +214,9 @@ void SX127x::loop() {
   if (this->store_.dio0_irq && this->payload_length_ > 0) {
     std::vector<uint8_t> packet(this->payload_length_);
     this->store_.dio0_irq = false;
+    if (this->modulation_ == MOD_LORA) {
+      this->write_register_(REG_FIFO_ADDR, 0x00);
+    }
     this->read_fifo_(packet);
     this->packet_trigger_->trigger(packet);
   }
