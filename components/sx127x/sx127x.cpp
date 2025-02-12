@@ -58,9 +58,9 @@ void SX127x::setup() {
 void SX127x::configure() {
   // toggle chip reset
   this->rst_pin_->digital_write(false);
-  delay(1);
+  delayMicroseconds(1000);
   this->rst_pin_->digital_write(true);
-  delay(10);
+  delayMicroseconds(10000);
 
   // check silicon version to make sure hw is ok
   if (this->read_register_(REG_VERSION) != 0x12) {
@@ -70,7 +70,7 @@ void SX127x::configure() {
 
   // switch to FSK and put transceiver to sleep
   this->write_register_(REG_OP_MODE, MOD_FSK | MODE_SLEEP);
-  delay(1);
+  delayMicroseconds(1000);
 
   // set freq
   uint64_t frf = ((uint64_t) this->frequency_ << 19) / FXOSC;
@@ -80,11 +80,11 @@ void SX127x::configure() {
 
   // run image cal, set actual modulation and go back to sleep
   this->write_register_(REG_OP_MODE, MOD_FSK | MODE_STDBY);
-  delay(1);
+  delayMicroseconds(1000);
   this->write_register_(REG_IMAGE_CAL, AUTO_IMAGE_CAL_ON | IMAGE_CAL_START | TEMP_THRESHOLD_10C);
-  delay(12);
+  delayMicroseconds(10000);
   this->write_register_(REG_OP_MODE, this->modulation_ | MODE_SLEEP);
-  delay(1);
+  delayMicroseconds(1000);
 
   // configure dio mapping and clear irq flag
   if (this->payload_length_ > 0) {
@@ -221,21 +221,21 @@ void SX127x::loop() {
 
 void SX127x::set_mode_standby() {
   this->write_register_(REG_OP_MODE, this->modulation_ | MODE_STDBY);
-  delay(10);
+  delayMicroseconds(5000);
 }
 
 void SX127x::set_mode_rx() {
   this->write_register_(REG_OP_MODE, this->modulation_ | MODE_RX_FS);
-  delay(10);
+  delayMicroseconds(5000);
   this->write_register_(REG_OP_MODE, this->modulation_ | MODE_RX_CONT);
-  delay(1);
+  delayMicroseconds(1000);
 }
 
 void SX127x::set_mode_tx() {
   this->write_register_(REG_OP_MODE, this->modulation_ | MODE_TX_FS);
-  delay(10);
+  delayMicroseconds(5000);
   this->write_register_(REG_OP_MODE, this->modulation_ | MODE_TX);
-  delay(1);
+  delayMicroseconds(1000);
 }
 
 void SX127x::dump_config() {
