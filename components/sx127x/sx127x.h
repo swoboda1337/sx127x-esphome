@@ -106,7 +106,7 @@ enum SX127xOpMode : uint8_t {
   ACCESS_LF_REGS = 0x08,
   MODE_CAD = 0x07,
   MODE_RX_SINGLE = 0x06,
-  MODE_RX_CONT = 0x05,
+  MODE_RX = 0x05,
   MODE_RX_FS = 0x04,
   MODE_TX = 0x03,
   MODE_TX_FS = 0x02,
