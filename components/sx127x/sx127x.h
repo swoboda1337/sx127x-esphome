@@ -104,6 +104,7 @@ enum SX127xOpMode : uint8_t {
   MODE_TX_FS = 0x02,
   MODE_STDBY = 0x01,
   MODE_SLEEP = 0x00,
+  MODE_MASK = 0x07,
 };
 
 enum SX127xDioMapping1 : uint8_t {
@@ -260,11 +261,13 @@ class SX127x : public Component,
   void set_rx_start(bool start) { this->rx_start_ = start; }
   void set_shaping(SX127xPaRamp shaping) { this->shaping_ = shaping; }
   void set_sync_value(const std::vector<uint8_t> &sync_value) { this->sync_value_ = sync_value; }
+  void run_image_cal();
   void configure();
   void transmit_packet(const std::vector<uint8_t> &packet);
   Trigger<std::vector<uint8_t>> *get_packet_trigger() const { return this->packet_trigger_; };
 
  protected:
+  void set_mode_(SX127xOpMode mode);
   void write_fifo_(const std::vector<uint8_t> &packet);
   void read_fifo_(std::vector<uint8_t> &packet);
   void write_register_(uint8_t reg, uint8_t value);

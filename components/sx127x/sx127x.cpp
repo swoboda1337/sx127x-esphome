@@ -168,8 +168,7 @@ void SX127x::configure() {
   this->set_mode_standby();
 
   // run image cal
-  this->write_register_(REG_IMAGE_CAL, AUTO_IMAGE_CAL_ON | IMAGE_CAL_START | TEMP_THRESHOLD_10C);
-  delayMicroseconds(10000);
+  this->run_image_cal();
 
   // enable rx mode
   if (this->rx_start_) {
@@ -206,24 +205,37 @@ void SX127x::loop() {
   }
 }
 
-void SX127x::set_mode_standby() {
-  this->write_register_(REG_OP_MODE, this->modulation_ | MODE_STDBY);
-  delayMicroseconds(5000);
+void SX127x::run_image_cal() {
+  uint32_t start = millis();
+  this->write_register_(REG_IMAGE_CAL, AUTO_IMAGE_CAL_ON | IMAGE_CAL_START | TEMP_THRESHOLD_10C);
+  while (this->read_register_(REG_IMAGE_CAL) & IMAGE_CAL_RUNNING) {
+    if (millis() - start > 20) {
+      ESP_LOGE(TAG, "Image cal failure");
+      break;
+    }
+  }
 }
 
-void SX127x::set_mode_rx() {
-  this->write_register_(REG_OP_MODE, this->modulation_ | MODE_RX_FS);
-  delayMicroseconds(5000);
-  this->write_register_(REG_OP_MODE, this->modulation_ | MODE_RX);
-  delayMicroseconds(1000);
+void SX127x::set_mode_(SX127xOpMode mode) {
+  uint32_t start = millis();
+  this->write_register_(REG_OP_MODE, this->modulation_ | mode);
+  while (true) {
+    uint8_t curr = this->read_register_(REG_OP_MODE) & MODE_MASK;
+    if ((curr == mode) || (mode == MODE_RX && curr == MODE_RX_FS)) {
+      break;
+    }
+    if (millis() - start > 20) {
+      ESP_LOGE(TAG, "Set mode failure");
+      break;
+    }
+  }
 }
 
-void SX127x::set_mode_tx() {
-  this->write_register_(REG_OP_MODE, this->modulation_ | MODE_TX_FS);
-  delayMicroseconds(5000);
-  this->write_register_(REG_OP_MODE, this->modulation_ | MODE_TX);
-  delayMicroseconds(1000);
-}
+void SX127x::set_mode_standby() { this->set_mode_(MODE_STDBY); }
+
+void SX127x::set_mode_rx() { this->set_mode_(MODE_RX); }
+
+void SX127x::set_mode_tx() { this->set_mode_(MODE_TX); }
 
 void SX127x::dump_config() {
   static const uint16_t RAMP_LUT[16] = {3400, 2000, 1000, 500, 250, 125, 100, 62, 50, 40, 31, 25, 20, 15, 12, 10};
