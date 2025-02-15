@@ -108,18 +108,15 @@ void SX127x::configure() {
   }
 
   // configure packet mode
-  if (this->crc_enable_) {
-    this->write_register_(REG_PACKET_CONFIG_1, CRC_ON);
-  } else {
-    this->write_register_(REG_PACKET_CONFIG_1, CRC_OFF);
-  }
   if (this->payload_length_ > 0) {
+    uint8_t crc_mode = (this->crc_enable_) ? CRC_ON : CRC_OFF;
     this->write_register_(REG_FIFO_THRESH, TX_START_FIFO_LEVEL | (this->payload_length_ - 1));
+    this->write_register_(REG_PACKET_CONFIG_1, crc_mode);
     this->write_register_(REG_PACKET_CONFIG_2, PACKET_MODE);
+    this->write_register_(REG_PAYLOAD_LENGTH_LSB, this->payload_length_);
   } else {
     this->write_register_(REG_PACKET_CONFIG_2, CONTINUOUS_MODE);
   }
-  this->write_register_(REG_PAYLOAD_LENGTH_LSB, this->payload_length_);
 
   // config pa
   if (this->pa_pin_ == PA_PIN_BOOST) {
