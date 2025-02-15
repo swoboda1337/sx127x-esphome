@@ -117,13 +117,18 @@ void SX127x::configure() {
 }
 
 void SX127x::configure_fsk_ook_() {
+  static const SX127xRxBw BW_LUT[22] = {RX_BW_2_6,   RX_BW_3_1,   RX_BW_3_9,  RX_BW_5_2,  RX_BW_6_3,   RX_BW_7_8,
+                                        RX_BW_10_4,  RX_BW_12_5,  RX_BW_15_6, RX_BW_20_8, RX_BW_25_0,  RX_BW_31_3,
+                                        RX_BW_41_7,  RX_BW_50_0,  RX_BW_62_5, RX_BW_83_3, RX_BW_100_0, RX_BW_125_0,
+                                        RX_BW_166_7, RX_BW_200_0, RX_BW_200_0};
+
+  // set the channel bw
+  this->write_register_(REG_RX_BW, BW_LUT[this->bandwidth_]);
+
   // set fdev
   uint32_t fdev = std::min((this->deviation_ * 4096) / 250000, (uint32_t) 0x3FFF);
   this->write_register_(REG_FDEV_MSB, (uint8_t) ((fdev >> 8) & 0xFF));
   this->write_register_(REG_FDEV_LSB, (uint8_t) ((fdev >> 0) & 0xFF));
-
-  // set the channel bw
-  this->write_register_(REG_RX_BW, this->rx_bandwidth_);
 
   // set bitrate
   uint64_t bitrate = (FXOSC + this->bitrate_ / 2) / this->bitrate_;  // round up
@@ -277,14 +282,15 @@ void SX127x::set_mode_standby() { this->set_mode_(MODE_STDBY); }
 
 void SX127x::dump_config() {
   static const uint16_t RAMP_LUT[16] = {3400, 2000, 1000, 500, 250, 125, 100, 62, 50, 40, 31, 25, 20, 15, 12, 10};
-  uint32_t rx_bw_mant = 16 + (this->rx_bandwidth_ >> 3) * 4;
-  uint32_t rx_bw_exp = this->rx_bandwidth_ & 0x7;
-  float rx_bw = (float) FXOSC / (rx_bw_mant * (1 << (rx_bw_exp + 2)));
+  static const float BW_LUT[22] = {2.60f,   3.12f,   3.91f,   5.21f,   6.25f,   7.81f,  10.42f, 12.50f,
+                                   15.62f,  20.83f,  25.00f,  31.25f,  41.67f,  50.00f, 62.50f, 83.33f,
+                                   100.00f, 125.00f, 166.67f, 200.00f, 250.00f, 500.00f};
   ESP_LOGCONFIG(TAG, "SX127x:");
   LOG_PIN("  CS Pin: ", this->cs_);
   LOG_PIN("  RST Pin: ", this->rst_pin_);
   LOG_PIN("  DIO0 Pin: ", this->dio0_pin_);
   ESP_LOGCONFIG(TAG, "  Frequency: %" PRIu32 " Hz", this->frequency_);
+  ESP_LOGCONFIG(TAG, "  Bandwidth: %.2f kHz", BW_LUT[this->bandwidth_]);
   ESP_LOGCONFIG(TAG, "  PA Pin: %s", this->pa_pin_ == PA_PIN_BOOST ? "BOOST" : "RFO");
   ESP_LOGCONFIG(TAG, "  PA Power: %" PRIu32 " dBm", this->pa_power_);
   ESP_LOGCONFIG(TAG, "  PA Ramp: %" PRIu16 " us", RAMP_LUT[this->pa_ramp_]);
@@ -302,7 +308,6 @@ void SX127x::dump_config() {
     ESP_LOGCONFIG(TAG, "  Modulation: %s", this->modulation_ == MOD_FSK ? "FSK" : "OOK");
     ESP_LOGCONFIG(TAG, "  Bitrate: %" PRIu32 "b/s", this->bitrate_);
     ESP_LOGCONFIG(TAG, "  Bitsync: %s", TRUEFALSE(this->bitsync_));
-    ESP_LOGCONFIG(TAG, "  Rx Bandwidth: %.1f kHz", (float) rx_bw / 1000);
     ESP_LOGCONFIG(TAG, "  Rx Start: %s", TRUEFALSE(this->rx_start_));
     ESP_LOGCONFIG(TAG, "  Rx Floor: %.1f dBm", this->rx_floor_);
     if (this->preamble_size_ > 0) {

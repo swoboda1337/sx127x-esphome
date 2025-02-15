@@ -9,6 +9,31 @@
 namespace esphome {
 namespace sx127x {
 
+enum SX127xBw : uint8_t {
+  SX127X_BW_2_6,
+  SX127X_BW_3_1,
+  SX127X_BW_3_9,
+  SX127X_BW_5_2,
+  SX127X_BW_6_3,
+  SX127X_BW_7_8,
+  SX127X_BW_10_4,
+  SX127X_BW_12_5,
+  SX127X_BW_15_6,
+  SX127X_BW_20_8,
+  SX127X_BW_25_0,
+  SX127X_BW_31_3,
+  SX127X_BW_41_7,
+  SX127X_BW_50_0,
+  SX127X_BW_62_5,
+  SX127X_BW_83_3,
+  SX127X_BW_100_0,
+  SX127X_BW_125_0,
+  SX127X_BW_166_7,
+  SX127X_BW_200_0,
+  SX127X_BW_250_0,
+  SX127X_BW_500_0,
+};
+
 class SX127x : public Component,
                public spi::SPIDevice<spi::BIT_ORDER_MSB_FIRST, spi::CLOCK_POLARITY_LOW, spi::CLOCK_PHASE_LEADING,
                                      spi::DATA_RATE_8MHZ> {
@@ -21,6 +46,7 @@ class SX127x : public Component,
   void set_bitsync(bool bitsync) { this->bitsync_ = bitsync; }
   void set_crc_enable(bool crc_enable) { this->crc_enable_ = crc_enable; }
   void set_dio0_pin(InternalGPIOPin *dio0_pin) { this->dio0_pin_ = dio0_pin; }
+  void set_bandwidth(SX127xBw bandwidth) { this->bandwidth_ = bandwidth; }
   void set_frequency(uint32_t frequency) { this->frequency_ = frequency; }
   void set_deviation(uint32_t deviation) { this->deviation_ = deviation; }
   void set_mode_rx();
@@ -35,7 +61,6 @@ class SX127x : public Component,
   void set_preamble_polarity(uint8_t preamble_polarity) { this->preamble_polarity_ = preamble_polarity; }
   void set_preamble_size(uint8_t preamble_size) { this->preamble_size_ = preamble_size; }
   void set_rst_pin(InternalGPIOPin *rst_pin) { this->rst_pin_ = rst_pin; }
-  void set_rx_bandwidth(SX127xRxBw bandwidth) { this->rx_bandwidth_ = bandwidth; }
   void set_rx_floor(float floor) { this->rx_floor_ = floor; }
   void set_rx_start(bool start) { this->rx_start_ = start; }
   void set_shaping(SX127xPaRamp shaping) { this->shaping_ = shaping; }
@@ -58,11 +83,11 @@ class SX127x : public Component,
   std::vector<uint8_t> sync_value_;
   InternalGPIOPin *dio0_pin_{nullptr};
   InternalGPIOPin *rst_pin_{nullptr};
-  SX127xPaConfig pa_pin_;
-  SX127xRxBw rx_bandwidth_;
+  SX127xBw bandwidth_;
   SX127xOpMode modulation_;
-  SX127xPaRamp shaping_;
+  SX127xPaConfig pa_pin_;
   SX127xPaRamp pa_ramp_;
+  SX127xPaRamp shaping_;
   uint32_t deviation_;
   uint32_t frequency_;
   uint32_t bitrate_;
