@@ -284,17 +284,17 @@ void SX127x::dump_config() {
   LOG_PIN("  CS Pin: ", this->cs_);
   LOG_PIN("  RST Pin: ", this->rst_pin_);
   LOG_PIN("  DIO0 Pin: ", this->dio0_pin_);
-  ESP_LOGCONFIG(TAG, "  Frequency: %f MHz", (float) this->frequency_ / 1000000);
+  ESP_LOGCONFIG(TAG, "  Frequency: %" PRIu32 " Hz", this->frequency_);
   ESP_LOGCONFIG(TAG, "  PA Pin: %s", this->pa_pin_ == PA_PIN_BOOST ? "BOOST" : "RFO");
   ESP_LOGCONFIG(TAG, "  PA Power: %" PRIu32 " dBm", this->pa_power_);
   ESP_LOGCONFIG(TAG, "  PA Ramp: %" PRIu16 " us", RAMP_LUT[this->pa_ramp_]);
-  if (this->modulation_ == MOD_FSK) {
+  if (this->modulation_ == MOD_OOK) {
+    static const char *SHAPING_LUT[4] = {"NONE", "CUTOFF_BR_X_1", "CUTOFF_BR_X_2", "ERROR"};
+    ESP_LOGCONFIG(TAG, "  Shaping: %s", SHAPING_LUT[this->shaping_ >> SHAPING_SHIFT]);
+  } else if (this->modulation_ == MOD_FSK) {
     static const char *SHAPING_LUT[4] = {"NONE", "GAUSSIAN_BT_1_0", "GAUSSIAN_BT_0_5", "GAUSSIAN_BT_0_3"};
     ESP_LOGCONFIG(TAG, "  Shaping: %s", SHAPING_LUT[this->shaping_ >> SHAPING_SHIFT]);
     ESP_LOGCONFIG(TAG, "  Deviation: %" PRIu32 " Hz", this->deviation_);
-  } else if (this->modulation_ == MOD_OOK) {
-    static const char *SHAPING_LUT[4] = {"NONE", "CUTOFF_BR_X_1", "CUTOFF_BR_X_2", "ERROR"};
-    ESP_LOGCONFIG(TAG, "  Shaping: %s", SHAPING_LUT[this->shaping_ >> SHAPING_SHIFT]);
   }
   if (this->modulation_ == MOD_LORA) {
     ESP_LOGCONFIG(TAG, "  Modulation: %s", "LORA");
