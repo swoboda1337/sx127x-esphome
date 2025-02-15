@@ -190,10 +190,13 @@ void SX127x::configure_fsk_ook_() {
 }
 
 void SX127x::configure_lora_() {
+  // config modem
   static const uint8_t BW_LUT[22] = {BW_7_8,   BW_7_8,   BW_7_8,   BW_7_8,   BW_7_8,   BW_7_8,  BW_10_4, BW_15_6,
                                      BW_15_6,  BW_20_8,  BW_31_3,  BW_31_3,  BW_41_7,  BW_62_5, BW_62_5, BW_125_0,
                                      BW_125_0, BW_125_0, BW_250_0, BW_250_0, BW_250_0, BW_500_0};
-  this->write_register_(REG_MODEM_CONFIG1, BW_LUT[this->bandwidth_] | CODE_RATE_4_8 | IMPLICIT_HEADER);
+  this->write_register_(REG_MODEM_CONFIG1, BW_LUT[this->bandwidth_] | CODE_RATE_4_5 | IMPLICIT_HEADER);
+
+  // config fifo and payload length
   this->write_register_(REG_FIFO_TX_BASE_ADDR, 0x00);
   this->write_register_(REG_FIFO_RX_BASE_ADDR, 0x00);
   this->write_register_(REG_PAYLOAD_LENGTH, this->payload_length_);
@@ -286,15 +289,15 @@ void SX127x::set_mode_standby() { this->set_mode_(MODE_STDBY); }
 
 void SX127x::dump_config() {
   static const uint16_t RAMP_LUT[16] = {3400, 2000, 1000, 500, 250, 125, 100, 62, 50, 40, 31, 25, 20, 15, 12, 10};
-  static const float BW_LUT[22] = {2.60f,   3.12f,   3.91f,   5.21f,   6.25f,   7.81f,  10.42f, 12.50f,
-                                   15.62f,  20.83f,  25.00f,  31.25f,  41.67f,  50.00f, 62.50f, 83.33f,
-                                   100.00f, 125.00f, 166.67f, 200.00f, 250.00f, 500.00f};
+  static const uint32_t BW_LUT[22] = {2604,   3125,   3906,   5208,   6250,   7812,  10416, 12500,
+                                      15625,  20833,  25000,  31250,  41666,  50000, 62500, 83333,
+                                      100000, 125000, 166666, 200000, 250000, 500000};
   ESP_LOGCONFIG(TAG, "SX127x:");
   LOG_PIN("  CS Pin: ", this->cs_);
   LOG_PIN("  RST Pin: ", this->rst_pin_);
   LOG_PIN("  DIO0 Pin: ", this->dio0_pin_);
   ESP_LOGCONFIG(TAG, "  Frequency: %" PRIu32 " Hz", this->frequency_);
-  ESP_LOGCONFIG(TAG, "  Bandwidth: %.2f kHz", BW_LUT[this->bandwidth_]);
+  ESP_LOGCONFIG(TAG, "  Bandwidth: %" PRIu32 " Hz", BW_LUT[this->bandwidth_]);
   ESP_LOGCONFIG(TAG, "  PA Pin: %s", this->pa_pin_ == PA_PIN_BOOST ? "BOOST" : "RFO");
   ESP_LOGCONFIG(TAG, "  PA Power: %" PRIu32 " dBm", this->pa_power_);
   ESP_LOGCONFIG(TAG, "  PA Ramp: %" PRIu16 " us", RAMP_LUT[this->pa_ramp_]);
