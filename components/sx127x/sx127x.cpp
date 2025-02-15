@@ -119,7 +119,7 @@ void SX127x::configure() {
   } else {
     this->write_register_(REG_PACKET_CONFIG_2, CONTINUOUS_MODE);
   }
-  this->write_register_(REG_PAYLOAD_LENGTH, this->payload_length_);
+  this->write_register_(REG_PAYLOAD_LENGTH_LSB, this->payload_length_);
 
   // config pa
   if (this->pa_pin_ == PA_PIN_BOOST) {
@@ -152,8 +152,8 @@ void SX127x::configure() {
   } else {
     this->write_register_(REG_PREAMBLE_DETECT, PREAMBLE_DETECTOR_OFF);
   }
-  this->write_register_(REG_PREAMBLE_MSB, 0);
-  this->write_register_(REG_PREAMBLE_LSB, this->preamble_size_);
+  this->write_register_(REG_PREAMBLE_SIZE_MSB, 0);
+  this->write_register_(REG_PREAMBLE_SIZE_LSB, this->preamble_size_);
 
   // config sync generation and setup ook threshold
   uint8_t bitsync = this->bitsync_ ? BIT_SYNC_ON : BIT_SYNC_OFF;
