@@ -11,6 +11,7 @@ namespace esphome {
 namespace sx127x {
 
 enum SX127xReg : uint8_t {
+  // Common registers
   REG_FIFO = 0x00,
   REG_OP_MODE = 0x01,
   REG_BITRATE_MSB = 0x02,
@@ -22,6 +23,10 @@ enum SX127xReg : uint8_t {
   REG_FRF_LSB = 0x08,
   REG_PA_CONFIG = 0x09,
   REG_PA_RAMP = 0x0A,
+  REG_DIO_MAPPING1 = 0x40,
+  REG_DIO_MAPPING2 = 0x41,
+  REG_VERSION = 0x42,
+  // FSK/OOK registers
   REG_RX_CONFIG = 0x0D,
   REG_RSSI_THRESH = 0x10,
   REG_RX_BW = 0x12,
@@ -46,9 +51,64 @@ enum SX127xReg : uint8_t {
   REG_PAYLOAD_LENGTH = 0x32,
   REG_FIFO_THRESH = 0x35,
   REG_IMAGE_CAL = 0x3B,
-  REG_DIO_MAPPING1 = 0x40,
-  REG_DIO_MAPPING2 = 0x41,
-  REG_VERSION = 0x42,
+};
+
+enum SX127xOpMode : uint8_t {
+  MOD_LORA = 0x80,
+  ACCESS_FSK_REGS = 0x40,
+  ACCESS_LORA_REGS = 0x00,
+  MOD_OOK = 0x20,
+  MOD_FSK = 0x00,
+  ACCESS_LF_REGS = 0x08,
+  ACCESS_HF_REGS = 0x00,
+  MODE_CAD = 0x07,
+  MODE_RX_SINGLE = 0x06,
+  MODE_RX = 0x05,
+  MODE_RX_FS = 0x04,
+  MODE_TX = 0x03,
+  MODE_TX_FS = 0x02,
+  MODE_STDBY = 0x01,
+  MODE_SLEEP = 0x00,
+  MODE_MASK = 0x07,
+};
+
+enum SX127xPaConfig : uint8_t {
+  PA_PIN_BOOST = 0x80,
+  PA_PIN_RFO = 0x00,
+  PA_MAX_POWER = 0x70,
+};
+
+enum SX127xPaRamp : uint8_t {
+  CUTOFF_BR_X_2 = 0x40,
+  CUTOFF_BR_X_1 = 0x20,
+  GAUSSIAN_BT_0_3 = 0x60,
+  GAUSSIAN_BT_0_5 = 0x40,
+  GAUSSIAN_BT_1_0 = 0x20,
+  SHAPING_NONE = 0x00,
+  SHAPING_SHIFT = 0x05,
+  PA_RAMP_10 = 0x0F,
+  PA_RAMP_12 = 0x0E,
+  PA_RAMP_15 = 0x0D,
+  PA_RAMP_20 = 0x0C,
+  PA_RAMP_25 = 0x0B,
+  PA_RAMP_31 = 0x0A,
+  PA_RAMP_40 = 0x09,
+  PA_RAMP_50 = 0x08,
+  PA_RAMP_62 = 0x07,
+  PA_RAMP_100 = 0x06,
+  PA_RAMP_125 = 0x05,
+  PA_RAMP_250 = 0x04,
+  PA_RAMP_500 = 0x03,
+  PA_RAMP_1000 = 0x02,
+  PA_RAMP_2000 = 0x01,
+  PA_RAMP_3400 = 0x00,
+};
+
+enum SX127xDioMapping1 : uint8_t {
+  DIO0_MAPPING_00 = 0x00,
+  DIO0_MAPPING_01 = 0x40,
+  DIO0_MAPPING_10 = 0x80,
+  DIO0_MAPPING_11 = 0xC0,
 };
 
 enum SX127xRxConfig : uint8_t {
@@ -63,77 +123,28 @@ enum SX127xRxConfig : uint8_t {
   TRIGGER_ALL = 0x07,
 };
 
-enum SX127xFifoThresh : uint8_t {
-  TX_START_FIFO_EMPTY = 0x80,
-  TX_START_FIFO_LEVEL = 0x00,
-};
-
-enum SX127xAfcFei : uint8_t {
-  AFC_AUTO_CLEAR_ON = 0x01,
-};
-
-enum SX127xSyncConfig : uint8_t {
-  AUTO_RESTART_PLL_LOCK = 0x80,
-  AUTO_RESTART_NO_LOCK = 0x40,
-  AUTO_RESTART_OFF = 0x00,
-  PREAMBLE_AA = 0x00,
-  PREAMBLE_55 = 0x20,
-  SYNC_OFF = 0x00,
-  SYNC_ON = 0x10,
-};
-
-enum SX127xImageCal : uint8_t {
-  AUTO_IMAGE_CAL_ON = 0x80,
-  IMAGE_CAL_START = 0x40,
-  IMAGE_CAL_RUNNING = 0x20,
-  TEMP_CHANGE = 0x08,
-  TEMP_THRESHOLD_20C = 0x06,
-  TEMP_THRESHOLD_15C = 0x04,
-  TEMP_THRESHOLD_10C = 0x02,
-  TEMP_THRESHOLD_5C = 0x00,
-  TEMP_MONITOR_OFF = 0x01,
-};
-
-enum SX127xOpMode : uint8_t {
-  MOD_FSK = 0x00,
-  MOD_OOK = 0x20,
-  MODE_LF_ON = 0x08,
-  MODE_RX = 0x05,
-  MODE_RX_FS = 0x04,
-  MODE_TX = 0x03,
-  MODE_TX_FS = 0x02,
-  MODE_STDBY = 0x01,
-  MODE_SLEEP = 0x00,
-  MODE_MASK = 0x07,
-};
-
-enum SX127xDioMapping1 : uint8_t {
-  DIO0_MAPPING_00 = 0x00,
-  DIO0_MAPPING_01 = 0x40,
-  DIO0_MAPPING_10 = 0x80,
-  DIO0_MAPPING_11 = 0xC0,
-  DIO1_MAPPING_00 = 0x00,
-  DIO1_MAPPING_01 = 0x10,
-  DIO1_MAPPING_10 = 0x20,
-  DIO1_MAPPING_11 = 0x30,
-  DIO2_MAPPING_00 = 0x00,
-  DIO2_MAPPING_01 = 0x04,
-  DIO2_MAPPING_10 = 0x08,
-  DIO2_MAPPING_11 = 0x0C,
-};
-
-enum SX127xPreambleDetect : uint8_t {
-  PREAMBLE_DETECTOR_ON = 0x80,
-  PREAMBLE_DETECTOR_OFF = 0x00,
-  PREAMBLE_BYTES_1 = 0x00,
-  PREAMBLE_BYTES_2 = 0x20,
-  PREAMBLE_BYTES_3 = 0x40,
-  PREAMBLE_BYTES_SHIFT = 0x05,
-};
-
-enum SX127xDioMapping2 : uint8_t {
-  MAP_PREAMBLE_INT = 0x01,
-  MAP_RSSI_INT = 0x00,
+enum SX127xRxBw : uint8_t {
+  RX_BW_2_6 = 0x17,
+  RX_BW_3_1 = 0x0F,
+  RX_BW_3_9 = 0x07,
+  RX_BW_5_2 = 0x16,
+  RX_BW_6_3 = 0x0E,
+  RX_BW_7_8 = 0x06,
+  RX_BW_10_4 = 0x15,
+  RX_BW_12_5 = 0x0D,
+  RX_BW_15_6 = 0x05,
+  RX_BW_20_8 = 0x14,
+  RX_BW_25_0 = 0x0C,
+  RX_BW_31_3 = 0x04,
+  RX_BW_41_7 = 0x13,
+  RX_BW_50_0 = 0x0B,
+  RX_BW_62_5 = 0x03,
+  RX_BW_83_3 = 0x12,
+  RX_BW_100_0 = 0x0A,
+  RX_BW_125_0 = 0x02,
+  RX_BW_166_7 = 0x11,
+  RX_BW_200_0 = 0x09,
+  RX_BW_250_0 = 0x01,
 };
 
 enum SX127xOokPeak : uint8_t {
@@ -164,6 +175,29 @@ enum SX127xOokAvg : uint8_t {
   OOK_AVG_RESERVED = 0x10,
 };
 
+enum SX127xAfcFei : uint8_t {
+  AFC_AUTO_CLEAR_ON = 0x01,
+};
+
+enum SX127xPreambleDetect : uint8_t {
+  PREAMBLE_DETECTOR_ON = 0x80,
+  PREAMBLE_DETECTOR_OFF = 0x00,
+  PREAMBLE_BYTES_1 = 0x00,
+  PREAMBLE_BYTES_2 = 0x20,
+  PREAMBLE_BYTES_3 = 0x40,
+  PREAMBLE_BYTES_SHIFT = 0x05,
+};
+
+enum SX127xSyncConfig : uint8_t {
+  AUTO_RESTART_PLL_LOCK = 0x80,
+  AUTO_RESTART_NO_LOCK = 0x40,
+  AUTO_RESTART_OFF = 0x00,
+  PREAMBLE_55 = 0x20,
+  PREAMBLE_AA = 0x00,
+  SYNC_ON = 0x10,
+  SYNC_OFF = 0x00,
+};
+
 enum SX127xPacketConfig1 : uint8_t {
   CRC_ON = 0x10,
   CRC_OFF = 0x00,
@@ -174,60 +208,22 @@ enum SX127xPacketConfig2 : uint8_t {
   PACKET_MODE = 0x40,
 };
 
-enum SX127xRxBw : uint8_t {
-  RX_BW_2_6 = 0x17,
-  RX_BW_3_1 = 0x0F,
-  RX_BW_3_9 = 0x07,
-  RX_BW_5_2 = 0x16,
-  RX_BW_6_3 = 0x0E,
-  RX_BW_7_8 = 0x06,
-  RX_BW_10_4 = 0x15,
-  RX_BW_12_5 = 0x0D,
-  RX_BW_15_6 = 0x05,
-  RX_BW_20_8 = 0x14,
-  RX_BW_25_0 = 0x0C,
-  RX_BW_31_3 = 0x04,
-  RX_BW_41_7 = 0x13,
-  RX_BW_50_0 = 0x0B,
-  RX_BW_62_5 = 0x03,
-  RX_BW_83_3 = 0x12,
-  RX_BW_100_0 = 0x0A,
-  RX_BW_125_0 = 0x02,
-  RX_BW_166_7 = 0x11,
-  RX_BW_200_0 = 0x09,
-  RX_BW_250_0 = 0x01,
+enum SX127xFifoThresh : uint8_t {
+  TX_START_FIFO_EMPTY = 0x80,
+  TX_START_FIFO_LEVEL = 0x00,
 };
 
-enum SX127xPaRamp : uint8_t {
-  CUTOFF_BR_X_2 = 0x40,
-  CUTOFF_BR_X_1 = 0x20,
-  GAUSSIAN_BT_0_3 = 0x60,
-  GAUSSIAN_BT_0_5 = 0x40,
-  GAUSSIAN_BT_1_0 = 0x20,
-  SHAPING_NONE = 0x00,
-  SHAPING_SHIFT = 0x05,
-  PA_RAMP_10 = 0x0F,
-  PA_RAMP_12 = 0x0E,
-  PA_RAMP_15 = 0x0D,
-  PA_RAMP_20 = 0x0C,
-  PA_RAMP_25 = 0x0B,
-  PA_RAMP_31 = 0x0A,
-  PA_RAMP_40 = 0x09,
-  PA_RAMP_50 = 0x08,
-  PA_RAMP_62 = 0x07,
-  PA_RAMP_100 = 0x06,
-  PA_RAMP_125 = 0x05,
-  PA_RAMP_250 = 0x04,
-  PA_RAMP_500 = 0x03,
-  PA_RAMP_1000 = 0x02,
-  PA_RAMP_2000 = 0x01,
-  PA_RAMP_3400 = 0x00,
-};
-
-enum SX127xPaConfig : uint8_t {
-  PA_PIN_RFO = 0x00,
-  PA_PIN_BOOST = 0x80,
-  PA_MAX_POWER = 0x70,
+enum SX127xImageCal : uint8_t {
+  AUTO_IMAGE_CAL_ON = 0x80,
+  IMAGE_CAL_START = 0x40,
+  IMAGE_CAL_RUNNING = 0x20,
+  TEMP_CHANGE = 0x08,
+  TEMP_THRESHOLD_20C = 0x06,
+  TEMP_THRESHOLD_15C = 0x04,
+  TEMP_THRESHOLD_10C = 0x02,
+  TEMP_THRESHOLD_5C = 0x00,
+  TEMP_MONITOR_OFF = 0x01,
+  TEMP_MONITOR_ON = 0x00,
 };
 
 class SX127x : public Component,
