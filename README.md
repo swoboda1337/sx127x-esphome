@@ -15,3 +15,9 @@ To use the PR:
 	external_components:
 	  - source: github://pr#7490
 	    components: [ sx127x ]
+
+To use this repo:
+
+	external_components:
+	  - source: github://swoboda1337/sx127x-esphome@main
+	    components: [ sx127x ]
