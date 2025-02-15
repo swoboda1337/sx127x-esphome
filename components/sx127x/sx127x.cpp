@@ -68,8 +68,8 @@ void SX127x::configure() {
     return;
   }
 
-  // set modulation and make sure transceiver is in sleep mode
-  this->write_register_(REG_OP_MODE, this->modulation_ | MODE_SLEEP);
+  // enter sleep mode
+  this->write_register_(REG_OP_MODE, MODE_SLEEP);
   delayMicroseconds(1000);
 
   // set freq
@@ -77,6 +77,17 @@ void SX127x::configure() {
   this->write_register_(REG_FRF_MSB, (uint8_t) ((frf >> 16) & 0xFF));
   this->write_register_(REG_FRF_MID, (uint8_t) ((frf >> 8) & 0xFF));
   this->write_register_(REG_FRF_LSB, (uint8_t) ((frf >> 0) & 0xFF));
+
+  // enter standby mode
+  this->write_register_(REG_OP_MODE, MODE_STDBY);
+  delayMicroseconds(1000);
+
+  // run image cal
+  this->run_image_cal();
+
+  // set correct modulation and go back to sleep
+  this->write_register_(REG_OP_MODE, this->modulation_ | MODE_SLEEP);
+  delayMicroseconds(1000);
 
   // set fdev
   uint32_t fdev = std::min(this->fsk_fdev_ / 61, (uint32_t) 0x3FFF);
@@ -161,15 +172,11 @@ void SX127x::configure() {
   this->write_register_(REG_OOK_FIX, 256 + int(this->rx_floor_ * 2.0));
   this->write_register_(REG_RSSI_THRESH, std::abs(int(this->rx_floor_ * 2.0)));
 
-  // enable standby mode
-  this->set_mode_standby();
-
-  // run image cal
-  this->run_image_cal();
-
-  // enable rx mode
+  // switch to rx or standby
   if (this->rx_start_) {
     this->set_mode_rx();
+  } else {
+    this->set_mode_standby();
   }
 }
 
