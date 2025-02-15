@@ -13,7 +13,7 @@ CONF_BITSYNC = "bitsync"
 CONF_CRC_ENABLE = "crc_enable"
 CONF_DIO0_PIN = "dio0_pin"
 CONF_FSK_FDEV = "fsk_fdev"
-CONF_FSK_RAMP = "fsk_ramp"
+CONF_PA_RAMP = "pa_ramp"
 CONF_MODULATION = "modulation"
 CONF_ON_PACKET = "on_packet"
 CONF_PA_PIN = "pa_pin"
@@ -147,10 +147,10 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_DIO0_PIN): pins.internal_gpio_input_pin_schema,
             cv.Required(CONF_FREQUENCY): cv.int_range(min=137000000, max=1020000000),
             cv.Optional(CONF_FSK_FDEV, default=5000): cv.int_range(min=0, max=100000),
-            cv.Optional(CONF_FSK_RAMP, default="40us"): cv.enum(RAMP),
             cv.Required(CONF_MODULATION): cv.enum(MOD),
             cv.Optional(CONF_ON_PACKET): automation.validate_automation(single=True),
             cv.Optional(CONF_PA_PIN, default="BOOST"): cv.enum(PA_PIN),
+            cv.Optional(CONF_PA_RAMP, default="40us"): cv.enum(RAMP),
             cv.Optional(CONF_PA_POWER, default=17): cv.int_range(min=0, max=17),
             cv.Optional(CONF_PAYLOAD_LENGTH, default=0): cv.int_range(min=0, max=64),
             cv.Optional(CONF_PREAMBLE_ERRORS, default=0): cv.int_range(min=0, max=31),
@@ -208,9 +208,9 @@ async def to_code(config):
     cg.add(var.set_rx_start(config[CONF_RX_START]))
     cg.add(var.set_rx_bandwidth(config[CONF_RX_BANDWIDTH]))
     cg.add(var.set_pa_pin(config[CONF_PA_PIN]))
+    cg.add(var.set_pa_ramp(config[CONF_PA_RAMP]))
     cg.add(var.set_pa_power(config[CONF_PA_POWER]))
     cg.add(var.set_fsk_fdev(config[CONF_FSK_FDEV]))
-    cg.add(var.set_fsk_ramp(config[CONF_FSK_RAMP]))
 
 
 SET_MODE_ACTION_SCHEMA = automation.maybe_simple_id(

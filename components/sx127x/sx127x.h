@@ -23,12 +23,12 @@ class SX127x : public Component,
   void set_dio0_pin(InternalGPIOPin *dio0_pin) { this->dio0_pin_ = dio0_pin; }
   void set_frequency(uint32_t frequency) { this->frequency_ = frequency; }
   void set_fsk_fdev(uint32_t fdev) { this->fsk_fdev_ = fdev; }
-  void set_fsk_ramp(SX127xPaRamp ramp) { this->fsk_ramp_ = ramp; }
   void set_mode_rx();
   void set_mode_standby();
   void set_mode_tx();
   void set_modulation(SX127xOpMode modulation) { this->modulation_ = modulation; }
   void set_pa_pin(SX127xPaConfig pin) { this->pa_pin_ = pin; }
+  void set_pa_ramp(SX127xPaRamp ramp) { this->pa_ramp_ = ramp; }
   void set_pa_power(uint32_t power) { this->pa_power_ = power; }
   void set_payload_length(uint8_t payload_length) { this->payload_length_ = payload_length; }
   void set_preamble_errors(uint8_t preamble_errors) { this->preamble_errors_ = preamble_errors; }
@@ -62,7 +62,7 @@ class SX127x : public Component,
   SX127xRxBw rx_bandwidth_;
   SX127xOpMode modulation_;
   SX127xPaRamp shaping_;
-  SX127xPaRamp fsk_ramp_;
+  SX127xPaRamp pa_ramp_;
   uint32_t fsk_fdev_;
   uint32_t frequency_;
   uint32_t bitrate_;

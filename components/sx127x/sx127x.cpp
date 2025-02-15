@@ -99,7 +99,7 @@ void SX127x::configure() {
     this->pa_power_ = std::min(this->pa_power_, (uint32_t) 14);
     this->write_register_(REG_PA_CONFIG, (this->pa_power_ - 0) | this->pa_pin_ | PA_MAX_POWER);
   }
-  this->write_register_(REG_PA_RAMP, this->shaping_ | this->fsk_ramp_);
+  this->write_register_(REG_PA_RAMP, this->shaping_ | this->pa_ramp_);
 
   // configure modem
   if (this->modulation_ != MOD_LORA) {
@@ -276,6 +276,7 @@ void SX127x::set_mode_tx() {
 void SX127x::set_mode_standby() { this->set_mode_(MODE_STDBY); }
 
 void SX127x::dump_config() {
+  static const uint16_t RAMP_LUT[16] = {3400, 2000, 1000, 500, 250, 125, 100, 62, 50, 40, 31, 25, 20, 15, 12, 10};
   uint32_t rx_bw_mant = 16 + (this->rx_bandwidth_ >> 3) * 4;
   uint32_t rx_bw_exp = this->rx_bandwidth_ & 0x7;
   float rx_bw = (float) FXOSC / (rx_bw_mant * (1 << (rx_bw_exp + 2)));
@@ -283,9 +284,18 @@ void SX127x::dump_config() {
   LOG_PIN("  CS Pin: ", this->cs_);
   LOG_PIN("  RST Pin: ", this->rst_pin_);
   LOG_PIN("  DIO0 Pin: ", this->dio0_pin_);
+  ESP_LOGCONFIG(TAG, "  Frequency: %f MHz", (float) this->frequency_ / 1000000);
   ESP_LOGCONFIG(TAG, "  PA Pin: %s", this->pa_pin_ == PA_PIN_BOOST ? "BOOST" : "RFO");
   ESP_LOGCONFIG(TAG, "  PA Power: %" PRIu32 " dBm", this->pa_power_);
-  ESP_LOGCONFIG(TAG, "  Frequency: %f MHz", (float) this->frequency_ / 1000000);
+  ESP_LOGCONFIG(TAG, "  PA Ramp: %" PRIu16 " us", RAMP_LUT[this->pa_ramp_]);
+  if (this->modulation_ == MOD_FSK) {
+    static const char *SHAPING_LUT[4] = {"NONE", "GAUSSIAN_BT_1_0", "GAUSSIAN_BT_0_5", "GAUSSIAN_BT_0_3"};
+    ESP_LOGCONFIG(TAG, "  Shaping: %s", SHAPING_LUT[this->shaping_ >> SHAPING_SHIFT]);
+    ESP_LOGCONFIG(TAG, "  FSK Fdev: %" PRIu32 " Hz", this->fsk_fdev_);
+  } else if (this->modulation_ == MOD_OOK) {
+    static const char *SHAPING_LUT[4] = {"NONE", "CUTOFF_BR_X_1", "CUTOFF_BR_X_2", "ERROR"};
+    ESP_LOGCONFIG(TAG, "  Shaping: %s", SHAPING_LUT[this->shaping_ >> SHAPING_SHIFT]);
+  }
   if (this->modulation_ == MOD_LORA) {
     ESP_LOGCONFIG(TAG, "  Modulation: %s", "LORA");
   } else {
@@ -306,16 +316,6 @@ void SX127x::dump_config() {
       if (!this->sync_value_.empty()) {
         ESP_LOGCONFIG(TAG, "  Sync Value: 0x%s", format_hex(this->sync_value_).c_str());
       }
-    }
-    if (this->modulation_ == MOD_FSK) {
-      static const uint16_t RAMP_LUT[16] = {3400, 2000, 1000, 500, 250, 125, 100, 62, 50, 40, 31, 25, 20, 15, 12, 10};
-      static const char *SHAPING_LUT[4] = {"NONE", "GAUSSIAN_BT_1_0", "GAUSSIAN_BT_0_5", "GAUSSIAN_BT_0_3"};
-      ESP_LOGCONFIG(TAG, "  Shaping: %s", SHAPING_LUT[this->shaping_ >> SHAPING_SHIFT]);
-      ESP_LOGCONFIG(TAG, "  FSK Fdev: %" PRIu32 " Hz", this->fsk_fdev_);
-      ESP_LOGCONFIG(TAG, "  FSK Ramp: %" PRIu16 " us", RAMP_LUT[this->fsk_ramp_]);
-    } else {
-      static const char *SHAPING_LUT[4] = {"NONE", "CUTOFF_BR_X_1", "CUTOFF_BR_X_2", "ERROR"};
-      ESP_LOGCONFIG(TAG, "  Shaping: %s", SHAPING_LUT[this->shaping_ >> SHAPING_SHIFT]);
     }
   }
   if (this->is_failed()) {
