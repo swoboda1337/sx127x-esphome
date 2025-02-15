@@ -70,6 +70,7 @@ RAMP = {
 }
 
 MOD = {
+    "LORA": SX127xOpMode.MOD_LORA,
     "FSK": SX127xOpMode.MOD_FSK,
     "OOK": SX127xOpMode.MOD_OOK,
 }

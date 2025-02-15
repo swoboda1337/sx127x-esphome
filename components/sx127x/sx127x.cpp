@@ -184,7 +184,9 @@ void SX127x::configure_fsk_ook_() {
 }
 
 void SX127x::configure_lora_() {
-
+  this->write_register_(REG_FIFO_TX_BASE_ADDR, 0x00);
+  this->write_register_(REG_FIFO_RX_BASE_ADDR, 0x00);
+  this->write_register_(REG_PAYLOAD_LENGTH, this->payload_length_);
 }
 
 void SX127x::transmit_packet(const std::vector<uint8_t> &packet) {
@@ -192,8 +194,16 @@ void SX127x::transmit_packet(const std::vector<uint8_t> &packet) {
     ESP_LOGE(TAG, "Packet size does not match payload length");
     return;
   }
-  this->set_mode_tx();
-  this->write_fifo_(packet);
+  if (this->modulation_ == MOD_LORA) {
+    this->set_mode_standby();
+    this->write_register_(REG_IRQ_FLAGS, 0xFF);
+    this->write_register_(REG_FIFO_ADDR_PTR, 0);
+    this->write_fifo_(packet);
+    this->set_mode_tx();
+  } else {
+    this->set_mode_tx();
+    this->write_fifo_(packet);
+  }
   uint32_t start = millis();
   while (!this->dio0_pin_->digital_read()) {
     if (millis() - start > 2000) {
@@ -211,6 +221,10 @@ void SX127x::transmit_packet(const std::vector<uint8_t> &packet) {
 void SX127x::loop() {
   if (this->payload_length_ > 0 && this->dio0_pin_->digital_read()) {
     std::vector<uint8_t> packet(this->payload_length_);
+    if (this->modulation_ == MOD_LORA) {
+      this->write_register_(REG_IRQ_FLAGS, 0xFF);
+      this->write_register_(REG_FIFO_ADDR_PTR, this->read_register_(REG_FIFO_RX_CURR_ADDR));
+    }
     this->read_fifo_(packet);
     this->packet_trigger_->trigger(packet);
   }
@@ -242,11 +256,23 @@ void SX127x::set_mode_(SX127xOpMode mode) {
   }
 }
 
+void SX127x::set_mode_rx() {
+  this->set_mode_(MODE_RX);
+  if (this->modulation_ == MOD_LORA) {
+    this->write_register_(REG_IRQ_FLAGS_MASK, 0x00);
+    this->write_register_(REG_DIO_MAPPING1, DIO0_MAPPING_00);
+  }
+}
+
+void SX127x::set_mode_tx() {
+  this->set_mode_(MODE_TX);
+  if (this->modulation_ == MOD_LORA) {
+    this->write_register_(REG_IRQ_FLAGS_MASK, 0x00);
+    this->write_register_(REG_DIO_MAPPING1, DIO0_MAPPING_01);
+  }
+}
+
 void SX127x::set_mode_standby() { this->set_mode_(MODE_STDBY); }
-
-void SX127x::set_mode_rx() { this->set_mode_(MODE_RX); }
-
-void SX127x::set_mode_tx() { this->set_mode_(MODE_TX); }
 
 void SX127x::dump_config() {
   static const uint16_t RAMP_LUT[16] = {3400, 2000, 1000, 500, 250, 125, 100, 62, 50, 40, 31, 25, 20, 15, 12, 10};
@@ -258,7 +284,11 @@ void SX127x::dump_config() {
   LOG_PIN("  RST Pin: ", this->rst_pin_);
   LOG_PIN("  DIO0 Pin: ", this->dio0_pin_);
   ESP_LOGCONFIG(TAG, "  Frequency: %f MHz", (float) this->frequency_ / 1000000);
-  ESP_LOGCONFIG(TAG, "  Modulation: %s", this->modulation_ == MOD_FSK ? "FSK" : "OOK");
+  if (this->modulation_ == MOD_LORA) {
+    ESP_LOGCONFIG(TAG, "  Modulation: %s", "LORA");
+  } else {
+    ESP_LOGCONFIG(TAG, "  Modulation: %s", this->modulation_ == MOD_FSK ? "FSK" : "OOK");
+  }
   ESP_LOGCONFIG(TAG, "  Bitrate: %" PRIu32 "b/s", this->bitrate_);
   ESP_LOGCONFIG(TAG, "  Bitsync: %s", TRUEFALSE(this->bitsync_));
   ESP_LOGCONFIG(TAG, "  Rx Bandwidth: %.1f kHz", (float) rx_bw / 1000);
