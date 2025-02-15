@@ -48,6 +48,8 @@ class SX127x : public Component,
   Trigger<std::vector<uint8_t>> *get_packet_trigger() const { return this->packet_trigger_; };
 
  protected:
+  void configure_fsk_ook_();
+  void configure_lora_();
   void set_mode_(SX127xOpMode mode);
   void write_fifo_(const std::vector<uint8_t> &packet);
   void read_fifo_(std::vector<uint8_t> &packet);

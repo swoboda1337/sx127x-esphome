@@ -89,6 +89,33 @@ void SX127x::configure() {
   this->write_register_(REG_OP_MODE, this->modulation_ | MODE_SLEEP);
   delayMicroseconds(1000);
 
+  // config pa
+  if (this->pa_pin_ == PA_PIN_BOOST) {
+    this->pa_power_ = std::max(this->pa_power_, (uint32_t) 2);
+    this->pa_power_ = std::min(this->pa_power_, (uint32_t) 17);
+    this->write_register_(REG_PA_CONFIG, (this->pa_power_ - 2) | this->pa_pin_ | PA_MAX_POWER);
+  } else {
+    this->pa_power_ = std::min(this->pa_power_, (uint32_t) 14);
+    this->write_register_(REG_PA_CONFIG, (this->pa_power_ - 0) | this->pa_pin_ | PA_MAX_POWER);
+  }
+  this->write_register_(REG_PA_RAMP, this->shaping_ | this->fsk_ramp_);
+
+  // configure modem
+  if (this->modulation_ != MOD_LORA) {
+    this->configure_fsk_ook_();
+  } else {
+    this->configure_lora_();
+  }
+
+  // switch to rx or standby
+  if (this->rx_start_) {
+    this->set_mode_rx();
+  } else {
+    this->set_mode_standby();
+  }
+}
+
+void SX127x::configure_fsk_ook_() {
   // set fdev
   uint32_t fdev = std::min(this->fsk_fdev_ / 61, (uint32_t) 0x3FFF);
   this->write_register_(REG_FDEV_MSB, (uint8_t) ((fdev >> 8) & 0xFF));
@@ -101,13 +128,6 @@ void SX127x::configure() {
   uint64_t bitrate = (FXOSC + this->bitrate_ / 2) / this->bitrate_;  // round up
   this->write_register_(REG_BITRATE_MSB, (uint8_t) ((bitrate >> 8) & 0xFF));
   this->write_register_(REG_BITRATE_LSB, (uint8_t) ((bitrate >> 0) & 0xFF));
-
-  // configure dio mapping
-  if (this->payload_length_ > 0) {
-    this->write_register_(REG_DIO_MAPPING1, DIO0_MAPPING_00);
-  } else {
-    this->write_register_(REG_DIO_MAPPING1, DIO0_MAPPING_11);
-  }
 
   // configure rx and afc
   uint8_t trigger = (this->preamble_size_ > 0) ? TRIGGER_PREAMBLE : TRIGGER_RSSI;
@@ -128,17 +148,7 @@ void SX127x::configure() {
   } else {
     this->write_register_(REG_PACKET_CONFIG_2, CONTINUOUS_MODE);
   }
-
-  // config pa
-  if (this->pa_pin_ == PA_PIN_BOOST) {
-    this->pa_power_ = std::max(this->pa_power_, (uint32_t) 2);
-    this->pa_power_ = std::min(this->pa_power_, (uint32_t) 17);
-    this->write_register_(REG_PA_CONFIG, (this->pa_power_ - 2) | this->pa_pin_ | PA_MAX_POWER);
-  } else {
-    this->pa_power_ = std::min(this->pa_power_, (uint32_t) 14);
-    this->write_register_(REG_PA_CONFIG, (this->pa_power_ - 0) | this->pa_pin_ | PA_MAX_POWER);
-  }
-  this->write_register_(REG_PA_RAMP, this->shaping_ | this->fsk_ramp_);
+  this->write_register_(REG_DIO_MAPPING1, DIO0_MAPPING_00);
 
   // config bit synchronizer
   uint8_t polarity = (this->preamble_polarity_ == 0xAA) ? PREAMBLE_AA : PREAMBLE_55;
@@ -171,13 +181,10 @@ void SX127x::configure() {
   // set rx floor
   this->write_register_(REG_OOK_FIX, 256 + int(this->rx_floor_ * 2.0));
   this->write_register_(REG_RSSI_THRESH, std::abs(int(this->rx_floor_ * 2.0)));
+}
 
-  // switch to rx or standby
-  if (this->rx_start_) {
-    this->set_mode_rx();
-  } else {
-    this->set_mode_standby();
-  }
+void SX127x::configure_lora_() {
+
 }
 
 void SX127x::transmit_packet(const std::vector<uint8_t> &packet) {
