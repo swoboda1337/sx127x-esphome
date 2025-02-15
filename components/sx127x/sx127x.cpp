@@ -1,5 +1,6 @@
 #include "sx127x.h"
-
+#include "esphome/core/hal.h"
+#include "esphome/core/log.h"
 #include <cinttypes>
 
 namespace esphome {
@@ -275,7 +276,6 @@ void SX127x::set_mode_tx() {
 void SX127x::set_mode_standby() { this->set_mode_(MODE_STDBY); }
 
 void SX127x::dump_config() {
-  static const uint16_t RAMP_LUT[16] = {3400, 2000, 1000, 500, 250, 125, 100, 62, 50, 40, 31, 25, 20, 15, 12, 10};
   uint32_t rx_bw_mant = 16 + (this->rx_bandwidth_ >> 3) * 4;
   uint32_t rx_bw_exp = this->rx_bandwidth_ & 0x7;
   float rx_bw = (float) FXOSC / (rx_bw_mant * (1 << (rx_bw_exp + 2)));
@@ -283,40 +283,41 @@ void SX127x::dump_config() {
   LOG_PIN("  CS Pin: ", this->cs_);
   LOG_PIN("  RST Pin: ", this->rst_pin_);
   LOG_PIN("  DIO0 Pin: ", this->dio0_pin_);
+  ESP_LOGCONFIG(TAG, "  PA Pin: %s", this->pa_pin_ == PA_PIN_BOOST ? "BOOST" : "RFO");
+  ESP_LOGCONFIG(TAG, "  PA Power: %" PRIu32 " dBm", this->pa_power_);
   ESP_LOGCONFIG(TAG, "  Frequency: %f MHz", (float) this->frequency_ / 1000000);
   if (this->modulation_ == MOD_LORA) {
     ESP_LOGCONFIG(TAG, "  Modulation: %s", "LORA");
   } else {
     ESP_LOGCONFIG(TAG, "  Modulation: %s", this->modulation_ == MOD_FSK ? "FSK" : "OOK");
-  }
-  ESP_LOGCONFIG(TAG, "  Bitrate: %" PRIu32 "b/s", this->bitrate_);
-  ESP_LOGCONFIG(TAG, "  Bitsync: %s", TRUEFALSE(this->bitsync_));
-  ESP_LOGCONFIG(TAG, "  Rx Bandwidth: %.1f kHz", (float) rx_bw / 1000);
-  ESP_LOGCONFIG(TAG, "  Rx Start: %s", TRUEFALSE(this->rx_start_));
-  ESP_LOGCONFIG(TAG, "  Rx Floor: %.1f dBm", this->rx_floor_);
-  if (this->preamble_size_ > 0) {
-    ESP_LOGCONFIG(TAG, "  Preamble Size: %" PRIu8, this->preamble_size_);
-    ESP_LOGCONFIG(TAG, "  Preamble Polarity: 0x%X", this->preamble_polarity_);
-    ESP_LOGCONFIG(TAG, "  Preamble Errors: %" PRIu8, this->preamble_errors_);
-  }
-  if (this->payload_length_ > 0) {
-    ESP_LOGCONFIG(TAG, "  Payload Length: %" PRIu32, this->payload_length_);
-    ESP_LOGCONFIG(TAG, "  CRC Enable: %s", TRUEFALSE(this->crc_enable_));
-    if (!this->sync_value_.empty()) {
-      ESP_LOGCONFIG(TAG, "  Sync Value: 0x%s", format_hex(this->sync_value_).c_str());
+    ESP_LOGCONFIG(TAG, "  Bitrate: %" PRIu32 "b/s", this->bitrate_);
+    ESP_LOGCONFIG(TAG, "  Bitsync: %s", TRUEFALSE(this->bitsync_));
+    ESP_LOGCONFIG(TAG, "  Rx Bandwidth: %.1f kHz", (float) rx_bw / 1000);
+    ESP_LOGCONFIG(TAG, "  Rx Start: %s", TRUEFALSE(this->rx_start_));
+    ESP_LOGCONFIG(TAG, "  Rx Floor: %.1f dBm", this->rx_floor_);
+    if (this->preamble_size_ > 0) {
+      ESP_LOGCONFIG(TAG, "  Preamble Size: %" PRIu8, this->preamble_size_);
+      ESP_LOGCONFIG(TAG, "  Preamble Polarity: 0x%X", this->preamble_polarity_);
+      ESP_LOGCONFIG(TAG, "  Preamble Errors: %" PRIu8, this->preamble_errors_);
+    }
+    if (this->payload_length_ > 0) {
+      ESP_LOGCONFIG(TAG, "  Payload Length: %" PRIu32, this->payload_length_);
+      ESP_LOGCONFIG(TAG, "  CRC Enable: %s", TRUEFALSE(this->crc_enable_));
+      if (!this->sync_value_.empty()) {
+        ESP_LOGCONFIG(TAG, "  Sync Value: 0x%s", format_hex(this->sync_value_).c_str());
+      }
+    }
+    if (this->modulation_ == MOD_FSK) {
+      static const uint16_t RAMP_LUT[16] = {3400, 2000, 1000, 500, 250, 125, 100, 62, 50, 40, 31, 25, 20, 15, 12, 10};
+      static const char *SHAPING_LUT[4] = {"NONE", "GAUSSIAN_BT_1_0", "GAUSSIAN_BT_0_5", "GAUSSIAN_BT_0_3"};
+      ESP_LOGCONFIG(TAG, "  Shaping: %s", SHAPING_LUT[this->shaping_ >> SHAPING_SHIFT]);
+      ESP_LOGCONFIG(TAG, "  FSK Fdev: %" PRIu32 " Hz", this->fsk_fdev_);
+      ESP_LOGCONFIG(TAG, "  FSK Ramp: %" PRIu16 " us", RAMP_LUT[this->fsk_ramp_]);
+    } else {
+      static const char *SHAPING_LUT[4] = {"NONE", "CUTOFF_BR_X_1", "CUTOFF_BR_X_2", "ERROR"};
+      ESP_LOGCONFIG(TAG, "  Shaping: %s", SHAPING_LUT[this->shaping_ >> SHAPING_SHIFT]);
     }
   }
-  if (this->modulation_ == MOD_FSK) {
-    static const char *shaping_lut[4] = {"NONE", "GAUSSIAN_BT_1_0", "GAUSSIAN_BT_0_5", "GAUSSIAN_BT_0_3"};
-    ESP_LOGCONFIG(TAG, "  Shaping: %s", shaping_lut[this->shaping_ >> SHAPING_SHIFT]);
-    ESP_LOGCONFIG(TAG, "  FSK Fdev: %" PRIu32 " Hz", this->fsk_fdev_);
-    ESP_LOGCONFIG(TAG, "  FSK Ramp: %" PRIu16 " us", RAMP_LUT[this->fsk_ramp_]);
-  } else {
-    static const char *shaping_lut[4] = {"NONE", "CUTOFF_BR_X_1", "CUTOFF_BR_X_2", "ERROR"};
-    ESP_LOGCONFIG(TAG, "  Shaping: %s", shaping_lut[this->shaping_ >> SHAPING_SHIFT]);
-  }
-  ESP_LOGCONFIG(TAG, "  PA Pin: %s", this->pa_pin_ == PA_PIN_BOOST ? "BOOST" : "RFO");
-  ESP_LOGCONFIG(TAG, "  PA Power: %" PRIu32 " dBm", this->pa_power_);
   if (this->is_failed()) {
     ESP_LOGE(TAG, "Configuring SX127x failed");
   }
