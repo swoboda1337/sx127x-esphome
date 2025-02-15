@@ -22,7 +22,7 @@ class SX127x : public Component,
   void set_crc_enable(bool crc_enable) { this->crc_enable_ = crc_enable; }
   void set_dio0_pin(InternalGPIOPin *dio0_pin) { this->dio0_pin_ = dio0_pin; }
   void set_frequency(uint32_t frequency) { this->frequency_ = frequency; }
-  void set_fsk_fdev(uint32_t fdev) { this->fsk_fdev_ = fdev; }
+  void set_deviation(uint32_t deviation) { this->deviation_ = deviation; }
   void set_mode_rx();
   void set_mode_standby();
   void set_mode_tx();
@@ -63,7 +63,7 @@ class SX127x : public Component,
   SX127xOpMode modulation_;
   SX127xPaRamp shaping_;
   SX127xPaRamp pa_ramp_;
-  uint32_t fsk_fdev_;
+  uint32_t deviation_;
   uint32_t frequency_;
   uint32_t bitrate_;
   uint32_t pa_power_;

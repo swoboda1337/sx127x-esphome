@@ -118,7 +118,7 @@ void SX127x::configure() {
 
 void SX127x::configure_fsk_ook_() {
   // set fdev
-  uint32_t fdev = std::min(this->fsk_fdev_ / 61, (uint32_t) 0x3FFF);
+  uint32_t fdev = std::min((this->deviation_ * 4096) / 250000, (uint32_t) 0x3FFF);
   this->write_register_(REG_FDEV_MSB, (uint8_t) ((fdev >> 8) & 0xFF));
   this->write_register_(REG_FDEV_LSB, (uint8_t) ((fdev >> 0) & 0xFF));
 
@@ -291,7 +291,7 @@ void SX127x::dump_config() {
   if (this->modulation_ == MOD_FSK) {
     static const char *SHAPING_LUT[4] = {"NONE", "GAUSSIAN_BT_1_0", "GAUSSIAN_BT_0_5", "GAUSSIAN_BT_0_3"};
     ESP_LOGCONFIG(TAG, "  Shaping: %s", SHAPING_LUT[this->shaping_ >> SHAPING_SHIFT]);
-    ESP_LOGCONFIG(TAG, "  FSK Fdev: %" PRIu32 " Hz", this->fsk_fdev_);
+    ESP_LOGCONFIG(TAG, "  Deviation: %" PRIu32 " Hz", this->deviation_);
   } else if (this->modulation_ == MOD_OOK) {
     static const char *SHAPING_LUT[4] = {"NONE", "CUTOFF_BR_X_1", "CUTOFF_BR_X_2", "ERROR"};
     ESP_LOGCONFIG(TAG, "  Shaping: %s", SHAPING_LUT[this->shaping_ >> SHAPING_SHIFT]);
