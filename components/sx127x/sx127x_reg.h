@@ -250,5 +250,24 @@ enum SX127xImageCal : uint8_t {
   TEMP_MONITOR_ON = 0x00,
 };
 
+enum SX127xModemCfg1 : uint8_t {
+  BW_7_8 = 0x00,
+  BW_10_4 = 0x10,
+  BW_15_6 = 0x20,
+  BW_20_8 = 0x30,
+  BW_31_3 = 0x40,
+  BW_41_7 = 0x50,
+  BW_62_5 = 0x60,
+  BW_125_0 = 0x70,
+  BW_250_0 = 0x80,
+  BW_500_0 = 0x90,
+  CODE_RATE_4_5 = 0x02,
+  CODE_RATE_4_6 = 0x04,
+  CODE_RATE_4_7 = 0x06,
+  CODE_RATE_4_8 = 0x08,
+  IMPLICIT_HEADER = 0x01,
+  EXPLICIT_HEADER = 0x00,
+};
+
 }  // namespace sx127x
 }  // namespace esphome

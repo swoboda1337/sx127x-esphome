@@ -117,10 +117,10 @@ void SX127x::configure() {
 }
 
 void SX127x::configure_fsk_ook_() {
-  static const SX127xRxBw BW_LUT[22] = {RX_BW_2_6,   RX_BW_3_1,   RX_BW_3_9,  RX_BW_5_2,  RX_BW_6_3,   RX_BW_7_8,
-                                        RX_BW_10_4,  RX_BW_12_5,  RX_BW_15_6, RX_BW_20_8, RX_BW_25_0,  RX_BW_31_3,
-                                        RX_BW_41_7,  RX_BW_50_0,  RX_BW_62_5, RX_BW_83_3, RX_BW_100_0, RX_BW_125_0,
-                                        RX_BW_166_7, RX_BW_200_0, RX_BW_200_0};
+  static const uint8_t BW_LUT[22] = {RX_BW_2_6,   RX_BW_3_1,   RX_BW_3_9,   RX_BW_5_2,  RX_BW_6_3,   RX_BW_7_8,
+                                     RX_BW_10_4,  RX_BW_12_5,  RX_BW_15_6,  RX_BW_20_8, RX_BW_25_0,  RX_BW_31_3,
+                                     RX_BW_41_7,  RX_BW_50_0,  RX_BW_62_5,  RX_BW_83_3, RX_BW_100_0, RX_BW_125_0,
+                                     RX_BW_166_7, RX_BW_200_0, RX_BW_250_0, RX_BW_250_0};
 
   // set the channel bw
   this->write_register_(REG_RX_BW, BW_LUT[this->bandwidth_]);
@@ -190,6 +190,10 @@ void SX127x::configure_fsk_ook_() {
 }
 
 void SX127x::configure_lora_() {
+  static const uint8_t BW_LUT[22] = {BW_7_8,   BW_7_8,   BW_7_8,   BW_7_8,   BW_7_8,   BW_7_8,  BW_10_4, BW_15_6,
+                                     BW_15_6,  BW_20_8,  BW_31_3,  BW_31_3,  BW_41_7,  BW_62_5, BW_62_5, BW_125_0,
+                                     BW_125_0, BW_125_0, BW_250_0, BW_250_0, BW_250_0, BW_500_0};
+  this->write_register_(REG_MODEM_CONFIG1, BW_LUT[this->bandwidth_] | CODE_RATE_4_8 | IMPLICIT_HEADER);
   this->write_register_(REG_FIFO_TX_BASE_ADDR, 0x00);
   this->write_register_(REG_FIFO_RX_BASE_ADDR, 0x00);
   this->write_register_(REG_PAYLOAD_LENGTH, this->payload_length_);

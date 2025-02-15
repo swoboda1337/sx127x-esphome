@@ -142,7 +142,7 @@ CONFIG_SCHEMA = cv.All(
     cv.Schema(
         {
             cv.GenerateID(): cv.declare_id(SX127x),
-            cv.Optional(CONF_BANDWIDTH, default="50_0kHz"): cv.enum(BW),
+            cv.Optional(CONF_BANDWIDTH, default="125_0kHz"): cv.enum(BW),
             cv.Optional(CONF_BITRATE): cv.int_range(min=500, max=300000),
             cv.Optional(CONF_BITSYNC): cv.boolean,
             cv.Optional(CONF_CRC_ENABLE, default=False): cv.boolean,
