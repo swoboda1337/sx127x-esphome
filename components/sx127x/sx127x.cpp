@@ -195,8 +195,8 @@ void SX127x::configure_lora_() {
                                      BW_125_0, BW_125_0, BW_250_0, BW_250_0, BW_250_0, BW_500_0};
   uint8_t header_mode = this->payload_length_ > 0 ? IMPLICIT_HEADER : EXPLICIT_HEADER;
   uint8_t crc_mode = (this->crc_enable_) ? RX_PAYLOAD_CRC_ON : RX_PAYLOAD_CRC_OFF;
-  uint8_t spreading_factor = 7 << SPREADING_FACTOR_SHIFT;
-  this->write_register_(REG_MODEM_CONFIG1, BW_LUT[this->bandwidth_] | CODE_RATE_4_5 | header_mode);
+  uint8_t spreading_factor = this->spreading_factor_ << SPREADING_FACTOR_SHIFT;
+  this->write_register_(REG_MODEM_CONFIG1, BW_LUT[this->bandwidth_] | this->coding_rate_ | header_mode);
   this->write_register_(REG_MODEM_CONFIG2, spreading_factor | crc_mode);
 
   // config fifo and payload length
@@ -337,6 +337,16 @@ void SX127x::dump_config() {
   }
   if (this->modulation_ == MOD_LORA) {
     ESP_LOGCONFIG(TAG, "  Modulation: %s", "LORA");
+    ESP_LOGCONFIG(TAG, "  Spreading Factor: %" PRIu8, this->spreading_factor_);
+    if (this->coding_rate_ == CODING_RATE_4_5) {
+      ESP_LOGCONFIG(TAG, "  Coding Rate: 4/5");
+    } else if (this->coding_rate_ == CODING_RATE_4_6) {
+      ESP_LOGCONFIG(TAG, "  Coding Rate: 4/6");
+    } else if (this->coding_rate_ == CODING_RATE_4_7) {
+      ESP_LOGCONFIG(TAG, "  Coding Rate: 4/7");
+    } else {
+      ESP_LOGCONFIG(TAG, "  Coding Rate: 4/8");
+    }
   } else {
     ESP_LOGCONFIG(TAG, "  Modulation: %s", this->modulation_ == MOD_FSK ? "FSK" : "OOK");
     ESP_LOGCONFIG(TAG, "  Bitrate: %" PRIu32 "b/s", this->bitrate_);

@@ -44,6 +44,7 @@ class SX127x : public Component,
   void dump_config() override;
   void set_bitrate(uint32_t bitrate) { this->bitrate_ = bitrate; }
   void set_bitsync(bool bitsync) { this->bitsync_ = bitsync; }
+  void set_coding_rate(SX127xModemCfg1 coding_rate) { this->coding_rate_ = coding_rate; }
   void set_crc_enable(bool crc_enable) { this->crc_enable_ = crc_enable; }
   void set_dio0_pin(InternalGPIOPin *dio0_pin) { this->dio0_pin_ = dio0_pin; }
   void set_bandwidth(SX127xBw bandwidth) { this->bandwidth_ = bandwidth; }
@@ -64,6 +65,7 @@ class SX127x : public Component,
   void set_rx_floor(float floor) { this->rx_floor_ = floor; }
   void set_rx_start(bool start) { this->rx_start_ = start; }
   void set_shaping(SX127xPaRamp shaping) { this->shaping_ = shaping; }
+  void set_spreading_factor(uint8_t spreading_factor) { this->spreading_factor_ = spreading_factor; }
   void set_sync_value(const std::vector<uint8_t> &sync_value) { this->sync_value_ = sync_value; }
   void run_image_cal();
   void configure();
@@ -88,6 +90,7 @@ class SX127x : public Component,
   SX127xPaConfig pa_pin_;
   SX127xPaRamp pa_ramp_;
   SX127xPaRamp shaping_;
+  SX127xModemCfg1 coding_rate_;
   uint32_t deviation_;
   uint32_t frequency_;
   uint32_t bitrate_;
@@ -96,6 +99,7 @@ class SX127x : public Component,
   uint8_t preamble_polarity_;
   uint8_t preamble_size_;
   uint8_t preamble_errors_;
+  uint8_t spreading_factor_;
   float rx_floor_;
   bool rx_start_;
   bool bitsync_;

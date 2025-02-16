@@ -11,6 +11,7 @@ DEPENDENCIES = ["spi"]
 CONF_BANDWIDTH = "bandwidth"
 CONF_BITRATE = "bitrate"
 CONF_BITSYNC = "bitsync"
+CONF_CODING_RATE = "coding_rate"
 CONF_CRC_ENABLE = "crc_enable"
 CONF_DEVIATION = "deviation"
 CONF_DIO0_PIN = "dio0_pin"
@@ -27,53 +28,16 @@ CONF_RST_PIN = "rst_pin"
 CONF_RX_FLOOR = "rx_floor"
 CONF_RX_START = "rx_start"
 CONF_SHAPING = "shaping"
+CONF_SPREADING_FACTOR = "spreading_factor"
 CONF_SYNC_VALUE = "sync_value"
 
 sx127x_ns = cg.esphome_ns.namespace("sx127x")
 SX127x = sx127x_ns.class_("SX127x", cg.Component, spi.SPIDevice)
-SX127xOpMode = sx127x_ns.enum("SX127xOpMode")
 SX127xBw = sx127x_ns.enum("SX127xBw")
+SX127xOpMode = sx127x_ns.enum("SX127xOpMode")
 SX127xPaConfig = sx127x_ns.enum("SX127xPaConfig")
 SX127xPaRamp = sx127x_ns.enum("SX127xPaRamp")
-
-PA_PIN = {
-    "RFO": SX127xPaConfig.PA_PIN_RFO,
-    "BOOST": SX127xPaConfig.PA_PIN_BOOST,
-}
-
-SHAPING = {
-    "CUTOFF_BR_X_2": SX127xPaRamp.CUTOFF_BR_X_2,
-    "CUTOFF_BR_X_1": SX127xPaRamp.CUTOFF_BR_X_1,
-    "GAUSSIAN_BT_0_3": SX127xPaRamp.GAUSSIAN_BT_0_3,
-    "GAUSSIAN_BT_0_5": SX127xPaRamp.GAUSSIAN_BT_0_5,
-    "GAUSSIAN_BT_1_0": SX127xPaRamp.GAUSSIAN_BT_1_0,
-    "NONE": SX127xPaRamp.SHAPING_NONE,
-}
-
-RAMP = {
-    "10us": SX127xPaRamp.PA_RAMP_10,
-    "12us": SX127xPaRamp.PA_RAMP_12,
-    "15us": SX127xPaRamp.PA_RAMP_15,
-    "20us": SX127xPaRamp.PA_RAMP_20,
-    "25us": SX127xPaRamp.PA_RAMP_25,
-    "31us": SX127xPaRamp.PA_RAMP_31,
-    "40us": SX127xPaRamp.PA_RAMP_40,
-    "50us": SX127xPaRamp.PA_RAMP_50,
-    "62us": SX127xPaRamp.PA_RAMP_62,
-    "100us": SX127xPaRamp.PA_RAMP_100,
-    "125us": SX127xPaRamp.PA_RAMP_125,
-    "250us": SX127xPaRamp.PA_RAMP_250,
-    "500us": SX127xPaRamp.PA_RAMP_500,
-    "1000us": SX127xPaRamp.PA_RAMP_1000,
-    "2000us": SX127xPaRamp.PA_RAMP_2000,
-    "3400us": SX127xPaRamp.PA_RAMP_3400,
-}
-
-MOD = {
-    "LORA": SX127xOpMode.MOD_LORA,
-    "FSK": SX127xOpMode.MOD_FSK,
-    "OOK": SX127xOpMode.MOD_OOK,
-}
+SX127xModemCfg1 = sx127x_ns.enum("SX127xModemCfg1")
 
 BW = {
     "2_6kHz": SX127xBw.SX127X_BW_2_6,
@@ -98,6 +62,52 @@ BW = {
     "200_0kHz": SX127xBw.SX127X_BW_200_0,
     "250_0kHz": SX127xBw.SX127X_BW_250_0,
     "500_0kHz": SX127xBw.SX127X_BW_500_0,
+}
+
+CODING_RATE = {
+    "4_5": SX127xModemCfg1.CODING_RATE_4_5,
+    "4_6": SX127xModemCfg1.CODING_RATE_4_6,
+    "4_7": SX127xModemCfg1.CODING_RATE_4_7,
+    "4_8": SX127xModemCfg1.CODING_RATE_4_8,
+}
+
+MOD = {
+    "LORA": SX127xOpMode.MOD_LORA,
+    "FSK": SX127xOpMode.MOD_FSK,
+    "OOK": SX127xOpMode.MOD_OOK,
+}
+
+PA_PIN = {
+    "RFO": SX127xPaConfig.PA_PIN_RFO,
+    "BOOST": SX127xPaConfig.PA_PIN_BOOST,
+}
+
+RAMP = {
+    "10us": SX127xPaRamp.PA_RAMP_10,
+    "12us": SX127xPaRamp.PA_RAMP_12,
+    "15us": SX127xPaRamp.PA_RAMP_15,
+    "20us": SX127xPaRamp.PA_RAMP_20,
+    "25us": SX127xPaRamp.PA_RAMP_25,
+    "31us": SX127xPaRamp.PA_RAMP_31,
+    "40us": SX127xPaRamp.PA_RAMP_40,
+    "50us": SX127xPaRamp.PA_RAMP_50,
+    "62us": SX127xPaRamp.PA_RAMP_62,
+    "100us": SX127xPaRamp.PA_RAMP_100,
+    "125us": SX127xPaRamp.PA_RAMP_125,
+    "250us": SX127xPaRamp.PA_RAMP_250,
+    "500us": SX127xPaRamp.PA_RAMP_500,
+    "1000us": SX127xPaRamp.PA_RAMP_1000,
+    "2000us": SX127xPaRamp.PA_RAMP_2000,
+    "3400us": SX127xPaRamp.PA_RAMP_3400,
+}
+
+SHAPING = {
+    "CUTOFF_BR_X_2": SX127xPaRamp.CUTOFF_BR_X_2,
+    "CUTOFF_BR_X_1": SX127xPaRamp.CUTOFF_BR_X_1,
+    "GAUSSIAN_BT_0_3": SX127xPaRamp.GAUSSIAN_BT_0_3,
+    "GAUSSIAN_BT_0_5": SX127xPaRamp.GAUSSIAN_BT_0_5,
+    "GAUSSIAN_BT_1_0": SX127xPaRamp.GAUSSIAN_BT_1_0,
+    "NONE": SX127xPaRamp.SHAPING_NONE,
 }
 
 SendPacketAction = sx127x_ns.class_(
@@ -166,6 +176,7 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_BANDWIDTH, default="125_0kHz"): cv.enum(BW),
             cv.Optional(CONF_BITRATE): cv.int_range(min=500, max=300000),
             cv.Optional(CONF_BITSYNC): cv.boolean,
+            cv.Optional(CONF_CODING_RATE, default="4_5"): cv.enum(CODING_RATE),
             cv.Optional(CONF_CRC_ENABLE, default=False): cv.boolean,
             cv.Optional(CONF_DEVIATION, default=5000): cv.int_range(min=0, max=100000),
             cv.Optional(CONF_DIO0_PIN): pins.internal_gpio_input_pin_schema,
@@ -185,6 +196,7 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_RX_FLOOR, default=-94): cv.float_range(min=-128, max=-1),
             cv.Optional(CONF_RX_START, default=True): cv.boolean,
             cv.Optional(CONF_SHAPING, default="NONE"): cv.enum(SHAPING),
+            cv.Optional(CONF_SPREADING_FACTOR, default=7): cv.int_range(min=6, max=12),
             cv.Optional(CONF_SYNC_VALUE, default=[]): cv.ensure_list(cv.hex_uint8_t),
         },
     )
@@ -230,6 +242,8 @@ async def to_code(config):
     cg.add(var.set_preamble_size(config[CONF_PREAMBLE_SIZE]))
     cg.add(var.set_preamble_polarity(config[CONF_PREAMBLE_POLARITY]))
     cg.add(var.set_preamble_errors(config[CONF_PREAMBLE_ERRORS]))
+    cg.add(var.set_coding_rate(config[CONF_CODING_RATE]))
+    cg.add(var.set_spreading_factor(config[CONF_SPREADING_FACTOR]))
     cg.add(var.set_sync_value(config[CONF_SYNC_VALUE]))
     cg.add(var.set_rx_floor(config[CONF_RX_FLOOR]))
     cg.add(var.set_rx_start(config[CONF_RX_START]))
