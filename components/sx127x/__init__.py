@@ -146,26 +146,32 @@ def validate_config(config):
         ]
         if config[CONF_BANDWIDTH] not in bws:
             raise cv.Invalid(
-                f"Bandwidth {config[CONF_BANDWIDTH]} is not allowed with LORA"
+                f"Bandwidth {config[CONF_BANDWIDTH]} is not available with LORA"
             )
-    elif config[CONF_BANDWIDTH] == "500_0kHz":
-        raise cv.Invalid(
-            f"Bandwidth {config[CONF_BANDWIDTH]} is only allowed with LORA"
-        )
-    if config[CONF_PAYLOAD_LENGTH] > 0 and CONF_DIO0_PIN not in config:
-        raise cv.Invalid("Cannot use packet mode without dio0_pin")
-    if config[CONF_PAYLOAD_LENGTH] > 0 and config[CONF_BITRATE] == 0:
-        raise cv.Invalid("Cannot use packet mode without setting bitrate")
+        if CONF_DIO0_PIN not in config:
+            raise cv.Invalid("Cannot use LoRa without dio0_pin")
+    else:
+        if config[CONF_BANDWIDTH] == "500_0kHz":
+            raise cv.Invalid(
+                f"Bandwidth {config[CONF_BANDWIDTH]} is only available with LORA"
+            )
+        if config[CONF_PAYLOAD_LENGTH] > 64:
+            raise cv.Invalid("Payload lengths larger than 64 are not available with FSK/OOK")
+        if config[CONF_PAYLOAD_LENGTH] > 0 and CONF_DIO0_PIN not in config:
+            raise cv.Invalid("Cannot use packet mode without dio0_pin")
+        if CONF_BITRATE not in config:
+            if config[CONF_PAYLOAD_LENGTH] > 0:
+                raise cv.Invalid("Cannot use packet mode without setting bitrate")
+            if CONF_BITSYNC in config and config[CONF_BITSYNC]:
+                raise cv.Invalid("Bitsync is true but bitrate is not configured")
+        elif CONF_BITSYNC not in config:
+            raise cv.Invalid(
+                "Bitrate is configured but not bitsync; add 'bitsync: true'"
+            )
     if config[CONF_PA_PIN] == "RFO" and config[CONF_PA_POWER] > 15:
         raise cv.Invalid("PA power must be <= 15 dbm when using the RFO pin")
     if config[CONF_PA_PIN] == "BOOST" and config[CONF_PA_POWER] < 2:
         raise cv.Invalid("PA power must be >= 2 dbm when using the BOOST pin")
-    if CONF_BITSYNC in config and config[CONF_BITSYNC] and CONF_BITRATE not in config:
-        raise cv.Invalid("Bitsync is true but bitrate is not configured")
-    if CONF_BITRATE in config and CONF_BITSYNC not in config:
-        raise cv.Invalid(
-            "Bitrate is configured but not bitsync; add 'bitsync: true' for original functionality"
-        )
     return config
 
 
@@ -186,7 +192,7 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_PA_PIN, default="BOOST"): cv.enum(PA_PIN),
             cv.Optional(CONF_PA_POWER, default=17): cv.int_range(min=0, max=17),
             cv.Optional(CONF_PA_RAMP, default="40us"): cv.enum(RAMP),
-            cv.Optional(CONF_PAYLOAD_LENGTH, default=0): cv.int_range(min=0, max=64),
+            cv.Optional(CONF_PAYLOAD_LENGTH, default=0): cv.int_range(min=0, max=256),
             cv.Optional(CONF_PREAMBLE_ERRORS, default=0): cv.int_range(min=0, max=31),
             cv.Optional(CONF_PREAMBLE_POLARITY, default=0xAA): cv.All(
                 cv.hex_int, cv.one_of(0xAA, 0x55)

@@ -208,7 +208,7 @@ enum SX127xPreambleDetect : uint8_t {
   PREAMBLE_BYTES_1 = 0x00,
   PREAMBLE_BYTES_2 = 0x20,
   PREAMBLE_BYTES_3 = 0x40,
-  PREAMBLE_BYTES_SHIFT = 0x05,
+  PREAMBLE_BYTES_SHIFT = 5,
 };
 
 enum SX127xSyncConfig : uint8_t {
@@ -280,7 +280,7 @@ enum SX127xModemCfg1 : uint8_t {
 };
 
 enum SX127xModemCfg2 : uint8_t {
-  SPREADING_FACTOR_SHIFT = 0x04,
+  SPREADING_FACTOR_SHIFT = 4,
   TX_CONTINOUS_MODE = 0x08,
   RX_PAYLOAD_CRC_ON = 0x04,
   RX_PAYLOAD_CRC_OFF = 0x00,
