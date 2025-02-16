@@ -134,8 +134,6 @@ def validate_config(config):
             "250_0kHz",
             "500_0kHz",
         ]
-        if config[CONF_PAYLOAD_LENGTH] == 0:
-            raise cv.Invalid("Payload length cannot be zero with LORA")
         if config[CONF_BANDWIDTH] not in bws:
             raise cv.Invalid(
                 f"Bandwidth {config[CONF_BANDWIDTH]} is not allowed with LORA"

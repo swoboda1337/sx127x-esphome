@@ -193,21 +193,32 @@ void SX127x::configure_lora_() {
   static const uint8_t BW_LUT[22] = {BW_7_8,   BW_7_8,   BW_7_8,   BW_7_8,   BW_7_8,   BW_7_8,  BW_10_4, BW_15_6,
                                      BW_15_6,  BW_20_8,  BW_31_3,  BW_31_3,  BW_41_7,  BW_62_5, BW_62_5, BW_125_0,
                                      BW_125_0, BW_125_0, BW_250_0, BW_250_0, BW_250_0, BW_500_0};
-  this->write_register_(REG_MODEM_CONFIG1, BW_LUT[this->bandwidth_] | CODE_RATE_4_5 | IMPLICIT_HEADER);
+  uint8_t header_mode = this->payload_length_ > 0 ? IMPLICIT_HEADER : EXPLICIT_HEADER;
+  uint8_t crc_mode = (this->crc_enable_) ? RX_PAYLOAD_CRC_ON : RX_PAYLOAD_CRC_OFF;
+  uint8_t spreading_factor = 7 << SPREADING_FACTOR_SHIFT;
+  this->write_register_(REG_MODEM_CONFIG1, BW_LUT[this->bandwidth_] | CODE_RATE_4_5 | header_mode);
+  this->write_register_(REG_MODEM_CONFIG2, spreading_factor | crc_mode);
 
   // config fifo and payload length
   this->write_register_(REG_FIFO_TX_BASE_ADDR, 0x00);
   this->write_register_(REG_FIFO_RX_BASE_ADDR, 0x00);
-  this->write_register_(REG_PAYLOAD_LENGTH, this->payload_length_);
+  this->write_register_(REG_PAYLOAD_LENGTH, std::max(this->payload_length_, (uint32_t) 1));
 }
 
 void SX127x::transmit_packet(const std::vector<uint8_t> &packet) {
-  if (packet.size() != this->payload_length_) {
+  if (this->payload_length_ > 0 && this->payload_length_ != packet.size()) {
     ESP_LOGE(TAG, "Packet size does not match payload length");
+    return;
+  }
+  if (packet.size() == 0 || packet.size() > 256) {
+    ESP_LOGE(TAG, "Packet size out of range");
     return;
   }
   if (this->modulation_ == MOD_LORA) {
     this->set_mode_standby();
+    if (this->payload_length_ == 0) {
+      this->write_register_(REG_PAYLOAD_LENGTH, packet.size());
+    }
     this->write_register_(REG_IRQ_FLAGS, 0xFF);
     this->write_register_(REG_FIFO_ADDR_PTR, 0);
     this->write_fifo_(packet);
@@ -218,7 +229,7 @@ void SX127x::transmit_packet(const std::vector<uint8_t> &packet) {
   }
   uint32_t start = millis();
   while (!this->dio0_pin_->digital_read()) {
-    if (millis() - start > 2000) {
+    if (millis() - start > 4000) {
       ESP_LOGE(TAG, "Transmit packet failure");
       break;
     }
@@ -231,14 +242,22 @@ void SX127x::transmit_packet(const std::vector<uint8_t> &packet) {
 }
 
 void SX127x::loop() {
-  if (this->payload_length_ > 0 && this->dio0_pin_->digital_read()) {
-    std::vector<uint8_t> packet(this->payload_length_);
+  if (this->dio0_pin_->digital_read()) {
     if (this->modulation_ == MOD_LORA) {
+      if ((this->read_register_(REG_IRQ_FLAGS) & PAYLOAD_CRC_ERROR) == 0) {
+        uint8_t bytes = this->read_register_(REG_NB_RX_BYTES);
+        uint8_t addr = this->read_register_(REG_FIFO_RX_CURR_ADDR);
+        std::vector<uint8_t> packet(bytes);
+        this->write_register_(REG_FIFO_ADDR_PTR, addr);
+        this->read_fifo_(packet);
+        this->packet_trigger_->trigger(packet);
+      }
       this->write_register_(REG_IRQ_FLAGS, 0xFF);
-      this->write_register_(REG_FIFO_ADDR_PTR, this->read_register_(REG_FIFO_RX_CURR_ADDR));
+    } else if (this->payload_length_ > 0) {
+      std::vector<uint8_t> packet(this->payload_length_);
+      this->read_fifo_(packet);
+      this->packet_trigger_->trigger(packet);
     }
-    this->read_fifo_(packet);
-    this->packet_trigger_->trigger(packet);
   }
 }
 
@@ -304,7 +323,7 @@ void SX127x::dump_config() {
     ESP_LOGCONFIG(TAG, "  Shaping: CUTOFF_BR_X_2");
   } else if (this->shaping_ == CUTOFF_BR_X_1) {
     ESP_LOGCONFIG(TAG, "  Shaping: CUTOFF_BR_X_1");
-  } else  if (this->shaping_ == GAUSSIAN_BT_0_3) {
+  } else if (this->shaping_ == GAUSSIAN_BT_0_3) {
     ESP_LOGCONFIG(TAG, "  Shaping: GAUSSIAN_BT_0_3");
   } else if (this->shaping_ == GAUSSIAN_BT_0_5) {
     ESP_LOGCONFIG(TAG, "  Shaping: GAUSSIAN_BT_0_5");
@@ -329,13 +348,15 @@ void SX127x::dump_config() {
       ESP_LOGCONFIG(TAG, "  Preamble Polarity: 0x%X", this->preamble_polarity_);
       ESP_LOGCONFIG(TAG, "  Preamble Errors: %" PRIu8, this->preamble_errors_);
     }
-    if (this->payload_length_ > 0) {
-      ESP_LOGCONFIG(TAG, "  Payload Length: %" PRIu32, this->payload_length_);
-      ESP_LOGCONFIG(TAG, "  CRC Enable: %s", TRUEFALSE(this->crc_enable_));
-      if (!this->sync_value_.empty()) {
-        ESP_LOGCONFIG(TAG, "  Sync Value: 0x%s", format_hex(this->sync_value_).c_str());
-      }
+    if (!this->sync_value_.empty()) {
+      ESP_LOGCONFIG(TAG, "  Sync Value: 0x%s", format_hex(this->sync_value_).c_str());
     }
+  }
+  if (this->payload_length_ > 0) {
+    ESP_LOGCONFIG(TAG, "  Payload Length: %" PRIu32, this->payload_length_);
+  }
+  if (this->payload_length_ > 0 || this->modulation_ == MOD_LORA) {
+    ESP_LOGCONFIG(TAG, "  CRC Enable: %s", TRUEFALSE(this->crc_enable_));
   }
   if (this->is_failed()) {
     ESP_LOGE(TAG, "Configuring SX127x failed");

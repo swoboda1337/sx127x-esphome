@@ -249,6 +249,17 @@ enum SX127xImageCal : uint8_t {
   TEMP_MONITOR_ON = 0x00,
 };
 
+enum SX127xIrqFlags : uint8_t {
+  RX_TIMEOUT = 0x80,
+  RX_DONE = 0x40,
+  PAYLOAD_CRC_ERROR = 0x20,
+  VALID_HEADER = 0x10,
+  TX_DONE = 0x08,
+  CAD_DONE = 0x04,
+  FHSS_CHANGE_CHANNEL = 0x02,
+  CAD_DETECTED = 0x01,
+};
+
 enum SX127xModemCfg1 : uint8_t {
   BW_7_8 = 0x00,
   BW_10_4 = 0x10,
@@ -266,6 +277,13 @@ enum SX127xModemCfg1 : uint8_t {
   CODE_RATE_4_8 = 0x08,
   IMPLICIT_HEADER = 0x01,
   EXPLICIT_HEADER = 0x00,
+};
+
+enum SX127xModemCfg2 : uint8_t {
+  SPREADING_FACTOR_SHIFT = 0x04,
+  TX_CONTINOUS_MODE = 0x08,
+  RX_PAYLOAD_CRC_ON = 0x04,
+  RX_PAYLOAD_CRC_OFF = 0x00,
 };
 
 }  // namespace sx127x
