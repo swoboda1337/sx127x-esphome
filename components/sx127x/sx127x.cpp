@@ -258,17 +258,23 @@ void SX127x::loop() {
       if ((this->read_register_(REG_IRQ_FLAGS) & PAYLOAD_CRC_ERROR) == 0) {
         uint8_t bytes = this->read_register_(REG_NB_RX_BYTES);
         uint8_t addr = this->read_register_(REG_FIFO_RX_CURR_ADDR);
+        uint8_t rssi = this->read_register_(REG_PKT_RSSI_VALUE);
+        uint8_t snr = this->read_register_(REG_PKT_SNR_VALUE);
         std::vector<uint8_t> packet(bytes);
         this->write_register_(REG_FIFO_ADDR_PTR, addr);
         this->read_fifo_(packet);
-        this->packet_trigger_->trigger(packet);
+        if (this->frequency_ > 700000000) {
+          this->packet_trigger_->trigger(packet, (float) rssi - 157, (float) snr / 4);
+        } else {
+          this->packet_trigger_->trigger(packet, (float) rssi - 164, (float) snr / 4);
+        }
       }
       this->write_register_(REG_IRQ_FLAGS, 0xFF);
     }
   } else if (this->payload_length_ > 0 && this->dio0_pin_->digital_read()) {
     std::vector<uint8_t> packet(this->payload_length_);
     this->read_fifo_(packet);
-    this->packet_trigger_->trigger(packet);
+    this->packet_trigger_->trigger(packet, 0.0f, 0.0f);
   }
 }
 

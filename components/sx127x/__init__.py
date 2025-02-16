@@ -158,7 +158,9 @@ def validate_config(config):
                 f"Bandwidth {config[CONF_BANDWIDTH]} is only available with LORA"
             )
         if config[CONF_PAYLOAD_LENGTH] > 64:
-            raise cv.Invalid("Payload lengths larger than 64 are not available with FSK/OOK")
+            raise cv.Invalid(
+                "Payload lengths larger than 64 are not available with FSK/OOK"
+            )
         if config[CONF_PAYLOAD_LENGTH] > 0 and CONF_DIO0_PIN not in config:
             raise cv.Invalid("Cannot use packet mode without dio0_pin")
         if CONF_BITRATE not in config:
@@ -221,7 +223,11 @@ async def to_code(config):
     if CONF_ON_PACKET in config:
         await automation.build_automation(
             var.get_packet_trigger(),
-            [(cg.std_vector.template(cg.uint8), "x")],
+            [
+                (cg.std_vector.template(cg.uint8), "x"),
+                (cg.float_, "rssi"),
+                (cg.float_, "snr"),
+            ],
             config[CONF_ON_PACKET],
         )
     if CONF_DIO0_PIN in config:

@@ -70,7 +70,7 @@ class SX127x : public Component,
   void run_image_cal();
   void configure();
   void transmit_packet(const std::vector<uint8_t> &packet);
-  Trigger<std::vector<uint8_t>> *get_packet_trigger() const { return this->packet_trigger_; };
+  Trigger<std::vector<uint8_t>, float, float> *get_packet_trigger() const { return this->packet_trigger_; };
 
  protected:
   void configure_fsk_ook_();
@@ -81,7 +81,7 @@ class SX127x : public Component,
   void write_register_(uint8_t reg, uint8_t value);
   uint8_t single_transfer_(uint8_t reg, uint8_t value);
   uint8_t read_register_(uint8_t reg);
-  Trigger<std::vector<uint8_t>> *packet_trigger_{new Trigger<std::vector<uint8_t>>()};
+  Trigger<std::vector<uint8_t>, float, float> *packet_trigger_{new Trigger<std::vector<uint8_t>, float, float>()};
   std::vector<uint8_t> sync_value_;
   InternalGPIOPin *dio0_pin_{nullptr};
   InternalGPIOPin *rst_pin_{nullptr};
