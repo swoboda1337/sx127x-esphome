@@ -42,21 +42,21 @@ class SX127x : public Component,
   void setup() override;
   void loop() override;
   void dump_config() override;
+  void set_bandwidth(SX127xBw bandwidth) { this->bandwidth_ = bandwidth; }
   void set_bitrate(uint32_t bitrate) { this->bitrate_ = bitrate; }
   void set_bitsync(bool bitsync) { this->bitsync_ = bitsync; }
-  void set_coding_rate(SX127xModemCfg1 coding_rate) { this->coding_rate_ = coding_rate; }
+  void set_coding_rate(uint8_t coding_rate) { this->coding_rate_ = coding_rate; }
   void set_crc_enable(bool crc_enable) { this->crc_enable_ = crc_enable; }
-  void set_dio0_pin(InternalGPIOPin *dio0_pin) { this->dio0_pin_ = dio0_pin; }
-  void set_bandwidth(SX127xBw bandwidth) { this->bandwidth_ = bandwidth; }
-  void set_frequency(uint32_t frequency) { this->frequency_ = frequency; }
   void set_deviation(uint32_t deviation) { this->deviation_ = deviation; }
+  void set_dio0_pin(InternalGPIOPin *dio0_pin) { this->dio0_pin_ = dio0_pin; }
+  void set_frequency(uint32_t frequency) { this->frequency_ = frequency; }
   void set_mode_rx();
   void set_mode_standby();
   void set_mode_tx();
-  void set_modulation(SX127xOpMode modulation) { this->modulation_ = modulation; }
-  void set_pa_pin(SX127xPaConfig pin) { this->pa_pin_ = pin; }
-  void set_pa_ramp(SX127xPaRamp ramp) { this->pa_ramp_ = ramp; }
-  void set_pa_power(uint32_t power) { this->pa_power_ = power; }
+  void set_modulation(uint8_t modulation) { this->modulation_ = modulation; }
+  void set_pa_pin(uint8_t pin) { this->pa_pin_ = pin; }
+  void set_pa_power(uint8_t power) { this->pa_power_ = power; }
+  void set_pa_ramp(uint8_t ramp) { this->pa_ramp_ = ramp; }
   void set_payload_length(uint8_t payload_length) { this->payload_length_ = payload_length; }
   void set_preamble_errors(uint8_t preamble_errors) { this->preamble_errors_ = preamble_errors; }
   void set_preamble_polarity(uint8_t preamble_polarity) { this->preamble_polarity_ = preamble_polarity; }
@@ -64,7 +64,7 @@ class SX127x : public Component,
   void set_rst_pin(InternalGPIOPin *rst_pin) { this->rst_pin_ = rst_pin; }
   void set_rx_floor(float floor) { this->rx_floor_ = floor; }
   void set_rx_start(bool start) { this->rx_start_ = start; }
-  void set_shaping(SX127xPaRamp shaping) { this->shaping_ = shaping; }
+  void set_shaping(uint8_t shaping) { this->shaping_ = shaping; }
   void set_spreading_factor(uint8_t spreading_factor) { this->spreading_factor_ = spreading_factor; }
   void set_sync_value(const std::vector<uint8_t> &sync_value) { this->sync_value_ = sync_value; }
   void run_image_cal();
@@ -86,24 +86,24 @@ class SX127x : public Component,
   InternalGPIOPin *dio0_pin_{nullptr};
   InternalGPIOPin *rst_pin_{nullptr};
   SX127xBw bandwidth_;
-  SX127xOpMode modulation_;
-  SX127xPaConfig pa_pin_;
-  SX127xPaRamp pa_ramp_;
-  SX127xPaRamp shaping_;
-  SX127xModemCfg1 coding_rate_;
+  uint32_t bitrate_;
   uint32_t deviation_;
   uint32_t frequency_;
-  uint32_t bitrate_;
-  uint32_t pa_power_;
   uint32_t payload_length_;
+  uint8_t coding_rate_;
+  uint8_t modulation_;
+  uint8_t pa_pin_;
+  uint8_t pa_power_;
+  uint8_t pa_ramp_;
+  uint8_t preamble_errors_;
   uint8_t preamble_polarity_;
   uint8_t preamble_size_;
-  uint8_t preamble_errors_;
+  uint8_t shaping_;
   uint8_t spreading_factor_;
   float rx_floor_;
-  bool rx_start_;
   bool bitsync_;
   bool crc_enable_;
+  bool rx_start_;
 };
 
 }  // namespace sx127x

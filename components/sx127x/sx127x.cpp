@@ -92,11 +92,11 @@ void SX127x::configure() {
 
   // config pa
   if (this->pa_pin_ == PA_PIN_BOOST) {
-    this->pa_power_ = std::max(this->pa_power_, (uint32_t) 2);
-    this->pa_power_ = std::min(this->pa_power_, (uint32_t) 17);
+    this->pa_power_ = std::max(this->pa_power_, (uint8_t) 2);
+    this->pa_power_ = std::min(this->pa_power_, (uint8_t) 17);
     this->write_register_(REG_PA_CONFIG, (this->pa_power_ - 2) | this->pa_pin_ | PA_MAX_POWER);
   } else {
-    this->pa_power_ = std::min(this->pa_power_, (uint32_t) 14);
+    this->pa_power_ = std::min(this->pa_power_, (uint8_t) 14);
     this->write_register_(REG_PA_CONFIG, (this->pa_power_ - 0) | this->pa_pin_ | PA_MAX_POWER);
   }
   this->write_register_(REG_PA_RAMP, this->shaping_ | this->pa_ramp_);
