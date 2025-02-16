@@ -168,15 +168,15 @@ void SX127x::configure_fsk_ook_() {
   }
 
   // config preamble detector
-  if (this->preamble_size_ > 0 && this->preamble_size_ < 4) {
-    uint8_t size = (this->preamble_size_ - 1) << PREAMBLE_BYTES_SHIFT;
+  if (this->preamble_size_ > 0) {
+    uint8_t size = (std::min(this->preamble_size_, (uint16_t) 3) - 1) << PREAMBLE_BYTES_SHIFT;
     uint8_t errors = this->preamble_errors_;
     this->write_register_(REG_PREAMBLE_DETECT, PREAMBLE_DETECTOR_ON | size | errors);
   } else {
     this->write_register_(REG_PREAMBLE_DETECT, PREAMBLE_DETECTOR_OFF);
   }
-  this->write_register_(REG_PREAMBLE_SIZE_MSB, 0);
-  this->write_register_(REG_PREAMBLE_SIZE_LSB, this->preamble_size_);
+  this->write_register_(REG_PREAMBLE_SIZE_MSB, this->preamble_size_ >> 16);
+  this->write_register_(REG_PREAMBLE_SIZE_LSB, this->preamble_size_ & 0xFF);
 
   // config sync generation and setup ook threshold
   uint8_t bitsync = this->bitsync_ ? BIT_SYNC_ON : BIT_SYNC_OFF;
@@ -203,6 +203,12 @@ void SX127x::configure_lora_() {
   this->write_register_(REG_FIFO_TX_BASE_ADDR, 0x00);
   this->write_register_(REG_FIFO_RX_BASE_ADDR, 0x00);
   this->write_register_(REG_PAYLOAD_LENGTH, std::max(this->payload_length_, (uint32_t) 1));
+
+  // config preamble
+  if (this->preamble_size_ >= 6) {
+    this->write_register_(REG_PREAMBLE_LEN_MSB, this->preamble_size_ >> 16);
+    this->write_register_(REG_PREAMBLE_LEN_LSB, this->preamble_size_ & 0xFF);
+  }
 
   // config sync word
   if (!this->sync_value_.empty()) {
@@ -355,6 +361,9 @@ void SX127x::dump_config() {
     if (!this->sync_value_.empty()) {
       ESP_LOGCONFIG(TAG, "  Sync Value: 0x%02x", this->sync_value_[0]);
     }
+    if (this->preamble_size_ > 0) {
+      ESP_LOGCONFIG(TAG, "  Preamble Size: %" PRIu16, this->preamble_size_);
+    }
   } else {
     ESP_LOGCONFIG(TAG, "  Modulation: %s", this->modulation_ == MOD_FSK ? "FSK" : "OOK");
     ESP_LOGCONFIG(TAG, "  Bitrate: %" PRIu32 "b/s", this->bitrate_);
@@ -362,7 +371,7 @@ void SX127x::dump_config() {
     ESP_LOGCONFIG(TAG, "  Rx Start: %s", TRUEFALSE(this->rx_start_));
     ESP_LOGCONFIG(TAG, "  Rx Floor: %.1f dBm", this->rx_floor_);
     if (this->preamble_size_ > 0) {
-      ESP_LOGCONFIG(TAG, "  Preamble Size: %" PRIu8, this->preamble_size_);
+      ESP_LOGCONFIG(TAG, "  Preamble Size: %" PRIu16, this->preamble_size_);
       ESP_LOGCONFIG(TAG, "  Preamble Polarity: 0x%X", this->preamble_polarity_);
       ESP_LOGCONFIG(TAG, "  Preamble Errors: %" PRIu8, this->preamble_errors_);
     }
