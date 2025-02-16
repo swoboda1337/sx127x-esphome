@@ -117,12 +117,11 @@ void SX127x::configure() {
 }
 
 void SX127x::configure_fsk_ook_() {
+  // set the channel bw
   static const uint8_t BW_LUT[22] = {RX_BW_2_6,   RX_BW_3_1,   RX_BW_3_9,   RX_BW_5_2,  RX_BW_6_3,   RX_BW_7_8,
                                      RX_BW_10_4,  RX_BW_12_5,  RX_BW_15_6,  RX_BW_20_8, RX_BW_25_0,  RX_BW_31_3,
                                      RX_BW_41_7,  RX_BW_50_0,  RX_BW_62_5,  RX_BW_83_3, RX_BW_100_0, RX_BW_125_0,
                                      RX_BW_166_7, RX_BW_200_0, RX_BW_250_0, RX_BW_250_0};
-
-  // set the channel bw
   this->write_register_(REG_RX_BW, BW_LUT[this->bandwidth_]);
 
   // set fdev
@@ -301,12 +300,20 @@ void SX127x::dump_config() {
   ESP_LOGCONFIG(TAG, "  PA Pin: %s", this->pa_pin_ == PA_PIN_BOOST ? "BOOST" : "RFO");
   ESP_LOGCONFIG(TAG, "  PA Power: %" PRIu32 " dBm", this->pa_power_);
   ESP_LOGCONFIG(TAG, "  PA Ramp: %" PRIu16 " us", RAMP_LUT[this->pa_ramp_]);
-  if (this->modulation_ == MOD_OOK) {
-    static const char *SHAPING_LUT[4] = {"NONE", "CUTOFF_BR_X_1", "CUTOFF_BR_X_2", "ERROR"};
-    ESP_LOGCONFIG(TAG, "  Shaping: %s", SHAPING_LUT[this->shaping_ >> SHAPING_SHIFT]);
-  } else if (this->modulation_ == MOD_FSK) {
-    static const char *SHAPING_LUT[4] = {"NONE", "GAUSSIAN_BT_1_0", "GAUSSIAN_BT_0_5", "GAUSSIAN_BT_0_3"};
-    ESP_LOGCONFIG(TAG, "  Shaping: %s", SHAPING_LUT[this->shaping_ >> SHAPING_SHIFT]);
+  if (this->shaping_ == CUTOFF_BR_X_2) {
+    ESP_LOGCONFIG(TAG, "  Shaping: CUTOFF_BR_X_2");
+  } else if (this->shaping_ == CUTOFF_BR_X_1) {
+    ESP_LOGCONFIG(TAG, "  Shaping: CUTOFF_BR_X_1");
+  } else  if (this->shaping_ == GAUSSIAN_BT_0_3) {
+    ESP_LOGCONFIG(TAG, "  Shaping: GAUSSIAN_BT_0_3");
+  } else if (this->shaping_ == GAUSSIAN_BT_0_5) {
+    ESP_LOGCONFIG(TAG, "  Shaping: GAUSSIAN_BT_0_5");
+  } else if (this->shaping_ == GAUSSIAN_BT_1_0) {
+    ESP_LOGCONFIG(TAG, "  Shaping: GAUSSIAN_BT_1_0");
+  } else {
+    ESP_LOGCONFIG(TAG, "  Shaping: NONE");
+  }
+  if (this->modulation_ == MOD_FSK) {
     ESP_LOGCONFIG(TAG, "  Deviation: %" PRIu32 " Hz", this->deviation_);
   }
   if (this->modulation_ == MOD_LORA) {

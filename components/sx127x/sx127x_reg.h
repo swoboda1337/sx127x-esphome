@@ -109,7 +109,6 @@ enum SX127xPaRamp : uint8_t {
   GAUSSIAN_BT_0_5 = 0x40,
   GAUSSIAN_BT_1_0 = 0x20,
   SHAPING_NONE = 0x00,
-  SHAPING_SHIFT = 0x05,
   PA_RAMP_10 = 0x0F,
   PA_RAMP_12 = 0x0E,
   PA_RAMP_15 = 0x0D,
