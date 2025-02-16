@@ -65,10 +65,10 @@ BW = {
 }
 
 CODING_RATE = {
-    "4_5": SX127xModemCfg1.CODING_RATE_4_5,
-    "4_6": SX127xModemCfg1.CODING_RATE_4_6,
-    "4_7": SX127xModemCfg1.CODING_RATE_4_7,
-    "4_8": SX127xModemCfg1.CODING_RATE_4_8,
+    "CR_4_5": SX127xModemCfg1.CODING_RATE_4_5,
+    "CR_4_6": SX127xModemCfg1.CODING_RATE_4_6,
+    "CR_4_7": SX127xModemCfg1.CODING_RATE_4_7,
+    "CR_4_8": SX127xModemCfg1.CODING_RATE_4_8,
 }
 
 MOD = {
