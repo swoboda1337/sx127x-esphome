@@ -203,6 +203,11 @@ void SX127x::configure_lora_() {
   this->write_register_(REG_FIFO_TX_BASE_ADDR, 0x00);
   this->write_register_(REG_FIFO_RX_BASE_ADDR, 0x00);
   this->write_register_(REG_PAYLOAD_LENGTH, std::max(this->payload_length_, (uint32_t) 1));
+
+  // config sync word
+  if (!this->sync_value_.empty()) {
+    this->write_register_(REG_SYNC_WORD, this->sync_value_[0]);
+  }
 }
 
 void SX127x::transmit_packet(const std::vector<uint8_t> &packet) {
@@ -346,6 +351,9 @@ void SX127x::dump_config() {
       ESP_LOGCONFIG(TAG, "  Coding Rate: 4/7");
     } else {
       ESP_LOGCONFIG(TAG, "  Coding Rate: 4/8");
+    }
+    if (!this->sync_value_.empty()) {
+      ESP_LOGCONFIG(TAG, "  Sync Value: 0x%02x", this->sync_value_[0]);
     }
   } else {
     ESP_LOGCONFIG(TAG, "  Modulation: %s", this->modulation_ == MOD_FSK ? "FSK" : "OOK");
