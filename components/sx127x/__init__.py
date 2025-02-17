@@ -152,15 +152,15 @@ def validate_config(config):
             raise cv.Invalid("Cannot use LoRa without dio0_pin")
         if config[CONF_PREAMBLE_SIZE] > 0 and config[CONF_PREAMBLE_SIZE] < 6:
             raise cv.Invalid("Minimum preamble size is 6 with LORA")
+        if config[CONF_SPREADING_FACTOR] == 6 and config[CONF_PAYLOAD_LENGTH] == 0:
+            raise cv.Invalid("Payload length must be set when spreading factor is 6")
     else:
         if config[CONF_BANDWIDTH] == "500_0kHz":
             raise cv.Invalid(
                 f"Bandwidth {config[CONF_BANDWIDTH]} is only available with LORA"
             )
         if config[CONF_PAYLOAD_LENGTH] > 64:
-            raise cv.Invalid(
-                "Payload lengths larger than 64 are not available with FSK/OOK"
-            )
+            raise cv.Invalid("Payload length must be >= 64 with FSK/OOK")
         if config[CONF_PAYLOAD_LENGTH] > 0 and CONF_DIO0_PIN not in config:
             raise cv.Invalid("Cannot use packet mode without dio0_pin")
         if CONF_BITRATE not in config:

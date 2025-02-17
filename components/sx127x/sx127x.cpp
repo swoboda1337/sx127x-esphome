@@ -8,6 +8,16 @@ namespace sx127x {
 
 static const char *const TAG = "sx127x";
 static const uint32_t FXOSC = 32000000u;
+static const uint16_t RAMP[16] = {3400, 2000, 1000, 500, 250, 125, 100, 62, 50, 40, 31, 25, 20, 15, 12, 10};
+static const uint32_t BW_HZ[22] = {2604,  3125,  3906,  5208,  6250,  7812,   10416,  12500,  15625,  20833,  25000,
+                                   31250, 41666, 50000, 62500, 83333, 100000, 125000, 166666, 200000, 250000, 500000};
+static const uint8_t BW_LORA[22] = {BW_7_8,   BW_7_8,   BW_7_8,   BW_7_8,   BW_7_8,   BW_7_8,  BW_10_4, BW_15_6,
+                                    BW_15_6,  BW_20_8,  BW_31_3,  BW_31_3,  BW_41_7,  BW_62_5, BW_62_5, BW_125_0,
+                                    BW_125_0, BW_125_0, BW_250_0, BW_250_0, BW_250_0, BW_500_0};
+static const uint8_t BW_FSK_OOK[22] = {RX_BW_2_6,   RX_BW_3_1,   RX_BW_3_9,   RX_BW_5_2,  RX_BW_6_3,   RX_BW_7_8,
+                                       RX_BW_10_4,  RX_BW_12_5,  RX_BW_15_6,  RX_BW_20_8, RX_BW_25_0,  RX_BW_31_3,
+                                       RX_BW_41_7,  RX_BW_50_0,  RX_BW_62_5,  RX_BW_83_3, RX_BW_100_0, RX_BW_125_0,
+                                       RX_BW_166_7, RX_BW_200_0, RX_BW_250_0, RX_BW_250_0};
 
 uint8_t SX127x::read_register_(uint8_t reg) {
   this->enable();
@@ -118,11 +128,7 @@ void SX127x::configure() {
 
 void SX127x::configure_fsk_ook_() {
   // set the channel bw
-  static const uint8_t BW_LUT[22] = {RX_BW_2_6,   RX_BW_3_1,   RX_BW_3_9,   RX_BW_5_2,  RX_BW_6_3,   RX_BW_7_8,
-                                     RX_BW_10_4,  RX_BW_12_5,  RX_BW_15_6,  RX_BW_20_8, RX_BW_25_0,  RX_BW_31_3,
-                                     RX_BW_41_7,  RX_BW_50_0,  RX_BW_62_5,  RX_BW_83_3, RX_BW_100_0, RX_BW_125_0,
-                                     RX_BW_166_7, RX_BW_200_0, RX_BW_250_0, RX_BW_250_0};
-  this->write_register_(REG_RX_BW, BW_LUT[this->bandwidth_]);
+  this->write_register_(REG_RX_BW, BW_FSK_OOK[this->bandwidth_]);
 
   // set fdev
   uint32_t fdev = std::min((this->deviation_ * 4096) / 250000, (uint32_t) 0x3FFF);
@@ -190,13 +196,10 @@ void SX127x::configure_fsk_ook_() {
 
 void SX127x::configure_lora_() {
   // config modem
-  static const uint8_t BW_LUT[22] = {BW_7_8,   BW_7_8,   BW_7_8,   BW_7_8,   BW_7_8,   BW_7_8,  BW_10_4, BW_15_6,
-                                     BW_15_6,  BW_20_8,  BW_31_3,  BW_31_3,  BW_41_7,  BW_62_5, BW_62_5, BW_125_0,
-                                     BW_125_0, BW_125_0, BW_250_0, BW_250_0, BW_250_0, BW_500_0};
   uint8_t header_mode = this->payload_length_ > 0 ? IMPLICIT_HEADER : EXPLICIT_HEADER;
   uint8_t crc_mode = (this->crc_enable_) ? RX_PAYLOAD_CRC_ON : RX_PAYLOAD_CRC_OFF;
   uint8_t spreading_factor = this->spreading_factor_ << SPREADING_FACTOR_SHIFT;
-  this->write_register_(REG_MODEM_CONFIG1, BW_LUT[this->bandwidth_] | this->coding_rate_ | header_mode);
+  this->write_register_(REG_MODEM_CONFIG1, BW_LORA[this->bandwidth_] | this->coding_rate_ | header_mode);
   this->write_register_(REG_MODEM_CONFIG2, spreading_factor | crc_mode);
 
   // config fifo and payload length
@@ -208,6 +211,21 @@ void SX127x::configure_lora_() {
   if (this->preamble_size_ >= 6) {
     this->write_register_(REG_PREAMBLE_LEN_MSB, this->preamble_size_ >> 16);
     this->write_register_(REG_PREAMBLE_LEN_LSB, this->preamble_size_ & 0xFF);
+  }
+
+  // optimize detection
+  float duration = 1000.0f * std::pow(2, this->spreading_factor_) / BW_HZ[this->bandwidth_];
+  if (duration > 16) {
+    this->write_register_(REG_MODEM_CONFIG3, MODEM_AGC_AUTO_ON | LOW_DATA_RATE_OPTIMIZE_ON);
+  } else {
+    this->write_register_(REG_MODEM_CONFIG3, MODEM_AGC_AUTO_ON);
+  }
+  if (this->spreading_factor_ == 6) {
+    this->write_register_(REG_DETECT_OPTIMIZE, 0xC5);
+    this->write_register_(REG_DETECT_THRESHOLD, 0x0C);
+  } else {
+    this->write_register_(REG_DETECT_OPTIMIZE, 0xC3);
+    this->write_register_(REG_DETECT_THRESHOLD, 0x0A);
   }
 
   // config sync word
@@ -323,19 +341,15 @@ void SX127x::set_mode_tx() {
 void SX127x::set_mode_standby() { this->set_mode_(MODE_STDBY); }
 
 void SX127x::dump_config() {
-  static const uint16_t RAMP_LUT[16] = {3400, 2000, 1000, 500, 250, 125, 100, 62, 50, 40, 31, 25, 20, 15, 12, 10};
-  static const uint32_t BW_LUT[22] = {2604,   3125,   3906,   5208,   6250,   7812,  10416, 12500,
-                                      15625,  20833,  25000,  31250,  41666,  50000, 62500, 83333,
-                                      100000, 125000, 166666, 200000, 250000, 500000};
   ESP_LOGCONFIG(TAG, "SX127x:");
   LOG_PIN("  CS Pin: ", this->cs_);
   LOG_PIN("  RST Pin: ", this->rst_pin_);
   LOG_PIN("  DIO0 Pin: ", this->dio0_pin_);
   ESP_LOGCONFIG(TAG, "  Frequency: %" PRIu32 " Hz", this->frequency_);
-  ESP_LOGCONFIG(TAG, "  Bandwidth: %" PRIu32 " Hz", BW_LUT[this->bandwidth_]);
+  ESP_LOGCONFIG(TAG, "  Bandwidth: %" PRIu32 " Hz", BW_HZ[this->bandwidth_]);
   ESP_LOGCONFIG(TAG, "  PA Pin: %s", this->pa_pin_ == PA_PIN_BOOST ? "BOOST" : "RFO");
   ESP_LOGCONFIG(TAG, "  PA Power: %" PRIu32 " dBm", this->pa_power_);
-  ESP_LOGCONFIG(TAG, "  PA Ramp: %" PRIu16 " us", RAMP_LUT[this->pa_ramp_]);
+  ESP_LOGCONFIG(TAG, "  PA Ramp: %" PRIu16 " us", RAMP[this->pa_ramp_]);
   if (this->shaping_ == CUTOFF_BR_X_2) {
     ESP_LOGCONFIG(TAG, "  Shaping: CUTOFF_BR_X_2");
   } else if (this->shaping_ == CUTOFF_BR_X_1) {

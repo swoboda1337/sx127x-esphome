@@ -286,5 +286,10 @@ enum SX127xModemCfg2 : uint8_t {
   RX_PAYLOAD_CRC_OFF = 0x00,
 };
 
+enum SX127xModemCfg3 : uint8_t {
+  LOW_DATA_RATE_OPTIMIZE_ON = 0x08,
+  MODEM_AGC_AUTO_ON = 0x04,
+};
+
 }  // namespace sx127x
 }  // namespace esphome
