@@ -243,7 +243,7 @@ void SX127x::transmit_packet(const std::vector<uint8_t> &packet) {
     ESP_LOGE(TAG, "Packet size does not match payload length");
     return;
   }
-  if (packet.size() == 0 || packet.size() > 256) {
+  if (packet.empty() || packet.size() > 256) {
     ESP_LOGE(TAG, "Packet size out of range");
     return;
   }
