@@ -109,7 +109,11 @@ void SX127x::configure() {
     this->pa_power_ = std::min(this->pa_power_, (uint8_t) 14);
     this->write_register_(REG_PA_CONFIG, (this->pa_power_ - 0) | this->pa_pin_ | PA_MAX_POWER);
   }
-  this->write_register_(REG_PA_RAMP, this->shaping_ | this->pa_ramp_);
+  if (this->modulation_ != MOD_LORA) {
+    this->write_register_(REG_PA_RAMP, this->pa_ramp_ | this->shaping_);
+  } else {
+    this->write_register_(REG_PA_RAMP, this->pa_ramp_);
+  }
 
   // configure modem
   if (this->modulation_ != MOD_LORA) {
