@@ -281,7 +281,7 @@ void SX127x::loop() {
         uint8_t bytes = this->read_register_(REG_NB_RX_BYTES);
         uint8_t addr = this->read_register_(REG_FIFO_RX_CURR_ADDR);
         uint8_t rssi = this->read_register_(REG_PKT_RSSI_VALUE);
-        uint8_t snr = this->read_register_(REG_PKT_SNR_VALUE);
+        int8_t snr = (int8_t) this->read_register_(REG_PKT_SNR_VALUE);
         std::vector<uint8_t> packet(bytes);
         this->write_register_(REG_FIFO_ADDR_PTR, addr);
         this->read_fifo_(packet);

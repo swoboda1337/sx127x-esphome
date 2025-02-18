@@ -79,7 +79,6 @@ class SX127x : public Component,
   void write_fifo_(const std::vector<uint8_t> &packet);
   void read_fifo_(std::vector<uint8_t> &packet);
   void write_register_(uint8_t reg, uint8_t value);
-  uint8_t single_transfer_(uint8_t reg, uint8_t value);
   uint8_t read_register_(uint8_t reg);
   Trigger<std::vector<uint8_t>, float, float> *packet_trigger_{new Trigger<std::vector<uint8_t>, float, float>()};
   std::vector<uint8_t> sync_value_;
