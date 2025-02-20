@@ -1,7 +1,6 @@
 #include "sx127x.h"
 #include "esphome/core/hal.h"
 #include "esphome/core/log.h"
-#include <cinttypes>
 
 namespace esphome {
 namespace sx127x {
