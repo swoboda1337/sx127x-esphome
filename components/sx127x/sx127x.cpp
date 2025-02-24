@@ -351,7 +351,7 @@ void SX127x::dump_config() {
   ESP_LOGCONFIG(TAG, "  Frequency: %" PRIu32 " Hz", this->frequency_);
   ESP_LOGCONFIG(TAG, "  Bandwidth: %" PRIu32 " Hz", BW_HZ[this->bandwidth_]);
   ESP_LOGCONFIG(TAG, "  PA Pin: %s", this->pa_pin_ == PA_PIN_BOOST ? "BOOST" : "RFO");
-  ESP_LOGCONFIG(TAG, "  PA Power: %" PRIu32 " dBm", this->pa_power_);
+  ESP_LOGCONFIG(TAG, "  PA Power: %" PRIu8 " dBm", this->pa_power_);
   ESP_LOGCONFIG(TAG, "  PA Ramp: %" PRIu16 " us", RAMP[this->pa_ramp_]);
   if (this->shaping_ == CUTOFF_BR_X_2) {
     ESP_LOGCONFIG(TAG, "  Shaping: CUTOFF_BR_X_2");
