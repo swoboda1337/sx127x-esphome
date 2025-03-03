@@ -61,6 +61,7 @@ class SX127x : public Component,
   void set_preamble_errors(uint8_t preamble_errors) { this->preamble_errors_ = preamble_errors; }
   void set_preamble_polarity(uint8_t preamble_polarity) { this->preamble_polarity_ = preamble_polarity; }
   void set_preamble_size(uint16_t preamble_size) { this->preamble_size_ = preamble_size; }
+  void set_preamble_detect(uint8_t preamble_detect) { this->preamble_detect_ = preamble_detect; }
   void set_rst_pin(InternalGPIOPin *rst_pin) { this->rst_pin_ = rst_pin; }
   void set_rx_floor(float floor) { this->rx_floor_ = floor; }
   void set_rx_start(bool start) { this->rx_start_ = start; }
@@ -95,6 +96,7 @@ class SX127x : public Component,
   uint8_t pa_pin_;
   uint8_t pa_power_;
   uint8_t pa_ramp_;
+  uint8_t preamble_detect_;
   uint8_t preamble_errors_;
   uint8_t preamble_polarity_;
   uint8_t shaping_;

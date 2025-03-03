@@ -144,7 +144,7 @@ void SX127x::configure_fsk_ook_() {
   this->write_register_(REG_BITRATE_LSB, (uint8_t) ((bitrate >> 0) & 0xFF));
 
   // configure rx and afc
-  uint8_t trigger = (this->preamble_size_ > 0) ? TRIGGER_PREAMBLE : TRIGGER_RSSI;
+  uint8_t trigger = (this->preamble_detect_ > 0) ? TRIGGER_PREAMBLE : TRIGGER_RSSI;
   this->write_register_(REG_AFC_FEI, AFC_AUTO_CLEAR_ON);
   if (this->modulation_ == MOD_FSK) {
     this->write_register_(REG_RX_CONFIG, AFC_AUTO_ON | AGC_AUTO_ON | trigger);
@@ -177,10 +177,10 @@ void SX127x::configure_fsk_ook_() {
   }
 
   // config preamble detector
-  if (this->preamble_size_ > 0) {
-    uint8_t size = (std::min(this->preamble_size_, (uint16_t) 3) - 1) << PREAMBLE_BYTES_SHIFT;
-    uint8_t errors = this->preamble_errors_;
-    this->write_register_(REG_PREAMBLE_DETECT, PREAMBLE_DETECTOR_ON | size | errors);
+  if (this->preamble_detect_ > 0) {
+    uint8_t size = (this->preamble_detect_ - 1) << PREAMBLE_DETECTOR_SIZE_SHIFT;
+    uint8_t tol = this->preamble_errors_ << PREAMBLE_DETECTOR_TOL_SHIFT;
+    this->write_register_(REG_PREAMBLE_DETECT, PREAMBLE_DETECTOR_ON | size | tol);
   } else {
     this->write_register_(REG_PREAMBLE_DETECT, PREAMBLE_DETECTOR_OFF);
   }
@@ -395,8 +395,13 @@ void SX127x::dump_config() {
     ESP_LOGCONFIG(TAG, "  Rx Floor: %.1f dBm", this->rx_floor_);
     if (this->preamble_size_ > 0) {
       ESP_LOGCONFIG(TAG, "  Preamble Size: %" PRIu16, this->preamble_size_);
-      ESP_LOGCONFIG(TAG, "  Preamble Polarity: 0x%X", this->preamble_polarity_);
+    }
+    if (this->preamble_detect_ > 0) {
+      ESP_LOGCONFIG(TAG, "  Preamble Detect: %" PRIu8, this->preamble_detect_);
       ESP_LOGCONFIG(TAG, "  Preamble Errors: %" PRIu8, this->preamble_errors_);
+    }
+    if (this->preamble_size_ > 0 || this->preamble_detect_ > 0) {
+      ESP_LOGCONFIG(TAG, "  Preamble Polarity: 0x%X", this->preamble_polarity_);
     }
     if (!this->sync_value_.empty()) {
       ESP_LOGCONFIG(TAG, "  Sync Value: 0x%s", format_hex(this->sync_value_).c_str());
