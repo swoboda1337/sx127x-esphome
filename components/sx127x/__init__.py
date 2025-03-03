@@ -164,6 +164,10 @@ def validate_config(config):
             raise cv.Invalid("Payload length must be >= 64 with FSK/OOK")
         if config[CONF_PAYLOAD_LENGTH] > 0 and CONF_DIO0_PIN not in config:
             raise cv.Invalid("Cannot use packet mode without dio0_pin")
+        if config[CONF_PREAMBLE_ERRORS] > 0 and config[CONF_PREAMBLE_DETECT] == 0:
+            raise cv.Invalid(
+                "Config preamble_errors is set but preamble_detect is not (previously preamble_size was used)"
+            )
         if CONF_BITRATE not in config:
             if config[CONF_PAYLOAD_LENGTH] > 0:
                 raise cv.Invalid("Cannot use packet mode without setting bitrate")
@@ -198,8 +202,8 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_PA_POWER, default=17): cv.int_range(min=0, max=17),
             cv.Optional(CONF_PA_RAMP, default="40us"): cv.enum(RAMP),
             cv.Optional(CONF_PAYLOAD_LENGTH, default=0): cv.int_range(min=0, max=256),
-            cv.Optional(CONF_PREAMBLE_DETECT, default=2): cv.int_range(min=0, max=3),
-            cv.Optional(CONF_PREAMBLE_ERRORS, default=10): cv.int_range(min=0, max=31),
+            cv.Optional(CONF_PREAMBLE_DETECT, default=0): cv.int_range(min=0, max=3),
+            cv.Optional(CONF_PREAMBLE_ERRORS, default=0): cv.int_range(min=0, max=31),
             cv.Optional(CONF_PREAMBLE_POLARITY, default=0xAA): cv.All(
                 cv.hex_int, cv.one_of(0xAA, 0x55)
             ),
