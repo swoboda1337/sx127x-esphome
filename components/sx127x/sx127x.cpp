@@ -342,6 +342,7 @@ void SX127x::set_mode_tx() {
 }
 
 void SX127x::set_mode_standby() { this->set_mode_(MODE_STDBY); }
+void SX127x::set_mode_sleep() { this->set_mode_(MODE_SLEEP); }
 
 void SX127x::dump_config() {
   ESP_LOGCONFIG(TAG, "SX127x:");

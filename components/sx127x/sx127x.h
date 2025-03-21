@@ -51,8 +51,9 @@ class SX127x : public Component,
   void set_dio0_pin(InternalGPIOPin *dio0_pin) { this->dio0_pin_ = dio0_pin; }
   void set_frequency(uint32_t frequency) { this->frequency_ = frequency; }
   void set_mode_rx();
-  void set_mode_standby();
   void set_mode_tx();
+  void set_mode_standby();
+  void set_mode_sleep();
   void set_modulation(uint8_t modulation) { this->modulation_ = modulation; }
   void set_pa_pin(uint8_t pin) { this->pa_pin_ = pin; }
   void set_pa_power(uint8_t power) { this->pa_power_ = power; }
