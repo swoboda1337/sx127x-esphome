@@ -96,8 +96,7 @@ void SX127x::configure() {
   this->run_image_cal();
 
   // set correct modulation and go back to sleep
-  this->write_register_(REG_OP_MODE, this->modulation_ | MODE_SLEEP);
-  delayMicroseconds(1000);
+  this->set_mode_sleep();
 
   // config pa
   if (this->pa_pin_ == PA_PIN_BOOST) {
