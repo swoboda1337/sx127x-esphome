@@ -84,13 +84,14 @@ class SX127x : public Component,
  protected:
   void configure_fsk_ook_();
   void configure_lora_();
-  void set_mode_(SX127xOpMode mode);
+  void set_mode_(uint8_t modulation, uint8_t mode);
   void write_fifo_(const std::vector<uint8_t> &packet);
   void read_fifo_(std::vector<uint8_t> &packet);
   void write_register_(uint8_t reg, uint8_t value);
   void call_listeners_(const std::vector<uint8_t> &packet, float rssi, float snr);
   uint8_t read_register_(uint8_t reg);
   Trigger<std::vector<uint8_t>, float, float> *packet_trigger_{new Trigger<std::vector<uint8_t>, float, float>()};
+  std::vector<SX127xListener *> listeners_;
   std::vector<uint8_t> sync_value_;
   InternalGPIOPin *dio0_pin_{nullptr};
   InternalGPIOPin *rst_pin_{nullptr};
@@ -115,7 +116,6 @@ class SX127x : public Component,
   bool bitsync_;
   bool crc_enable_;
   bool rx_start_;
-  std::vector<SX127xListener *> listeners_{};
 };
 
 }  // namespace sx127x

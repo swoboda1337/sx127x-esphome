@@ -79,8 +79,7 @@ void SX127x::configure() {
   }
 
   // enter sleep mode
-  this->write_register_(REG_OP_MODE, MODE_SLEEP);
-  delayMicroseconds(1000);
+  this->set_mode_(MOD_FSK, MODE_SLEEP);
 
   // set freq
   uint64_t frf = ((uint64_t) this->frequency_ << 19) / FXOSC;
@@ -89,13 +88,12 @@ void SX127x::configure() {
   this->write_register_(REG_FRF_LSB, (uint8_t) ((frf >> 0) & 0xFF));
 
   // enter standby mode
-  this->write_register_(REG_OP_MODE, MODE_STDBY);
-  delayMicroseconds(1000);
+  this->set_mode_(MOD_FSK, MODE_STDBY);
 
   // run image cal
   this->run_image_cal();
 
-  // set correct modulation and go back to sleep
+  // go back to sleep
   this->set_mode_sleep();
 
   // config pa
@@ -307,6 +305,15 @@ void SX127x::loop() {
 
 void SX127x::run_image_cal() {
   uint32_t start = millis();
+  uint8_t mode = this->read_register_(REG_OP_MODE);
+  if ((mode & MODE_MASK) != MODE_STDBY) {
+    ESP_LOGE(TAG, "Radio needs to be in standby mode for image cal");
+    return;
+  }
+  if (mode & MOD_LORA) {
+    this->set_mode_(MOD_FSK, MODE_SLEEP);
+    this->set_mode_(MOD_FSK, MODE_STDBY);
+  }
   if (this->auto_cal_) {
     this->write_register_(REG_IMAGE_CAL, IMAGE_CAL_START | AUTO_IMAGE_CAL_ON | TEMP_THRESHOLD_10C);
   } else {
@@ -318,14 +325,21 @@ void SX127x::run_image_cal() {
       break;
     }
   }
+  if (mode & MOD_LORA) {
+    this->set_mode_(this->modulation_, MODE_SLEEP);
+    this->set_mode_(this->modulation_, MODE_STDBY);
+  }
 }
 
-void SX127x::set_mode_(SX127xOpMode mode) {
+void SX127x::set_mode_(uint8_t modulation, uint8_t mode) {
   uint32_t start = millis();
-  this->write_register_(REG_OP_MODE, this->modulation_ | mode);
+  this->write_register_(REG_OP_MODE, modulation | mode);
   while (true) {
     uint8_t curr = this->read_register_(REG_OP_MODE) & MODE_MASK;
     if ((curr == mode) || (mode == MODE_RX && curr == MODE_RX_FS)) {
+      if (mode == MODE_SLEEP) {
+        this->write_register_(REG_OP_MODE, modulation | mode);
+      }
       break;
     }
     if (millis() - start > 20) {
@@ -336,7 +350,7 @@ void SX127x::set_mode_(SX127xOpMode mode) {
 }
 
 void SX127x::set_mode_rx() {
-  this->set_mode_(MODE_RX);
+  this->set_mode_(this->modulation_, MODE_RX);
   if (this->modulation_ == MOD_LORA) {
     this->write_register_(REG_IRQ_FLAGS_MASK, 0x00);
     this->write_register_(REG_DIO_MAPPING1, DIO0_MAPPING_00);
@@ -344,16 +358,16 @@ void SX127x::set_mode_rx() {
 }
 
 void SX127x::set_mode_tx() {
-  this->set_mode_(MODE_TX);
+  this->set_mode_(this->modulation_, MODE_TX);
   if (this->modulation_ == MOD_LORA) {
     this->write_register_(REG_IRQ_FLAGS_MASK, 0x00);
     this->write_register_(REG_DIO_MAPPING1, DIO0_MAPPING_01);
   }
 }
 
-void SX127x::set_mode_standby() { this->set_mode_(MODE_STDBY); }
+void SX127x::set_mode_standby() { this->set_mode_(this->modulation_, MODE_STDBY); }
 
-void SX127x::set_mode_sleep() { this->set_mode_(MODE_SLEEP); }
+void SX127x::set_mode_sleep() { this->set_mode_(this->modulation_, MODE_SLEEP); }
 
 void SX127x::dump_config() {
   ESP_LOGCONFIG(TAG, "SX127x:");
