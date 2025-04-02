@@ -7,6 +7,16 @@
 namespace esphome {
 namespace sx127x {
 
+template<typename... Ts> class RunImageCalAction : public Action<Ts...> {
+ public:
+  RunImageCalAction(SX127x *sx127x) : sx127x_(sx127x) {}
+
+  void play(Ts... x) override { this->sx127x_->run_image_cal(); }
+
+ protected:
+  SX127x *sx127x_;
+};
+
 template<typename... Ts> class SendPacketAction : public Action<Ts...>, public Parented<SX127x> {
  public:
   void set_data_template(std::function<std::vector<uint8_t>(Ts...)> func) {
