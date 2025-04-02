@@ -36,7 +36,7 @@ enum SX127xBw : uint8_t {
 
 class SX127xListener {
  public:
-  virtual void on_packet(std::vector<uint8_t> packet, float rssi, float snr);
+  virtual void on_packet(const std::vector<uint8_t> &packet, float rssi, float snr);
 };
 
 class SX127x : public Component,
@@ -89,7 +89,7 @@ class SX127x : public Component,
   void read_fifo_(std::vector<uint8_t> &packet);
   void write_register_(uint8_t reg, uint8_t value);
   uint8_t read_register_(uint8_t reg);
-  void on_packet(std::vector<uint8_t> packet, float rssi, float snr);
+  void on_packet_(const std::vector<uint8_t> &packet, float rssi, float snr);
   Trigger<std::vector<uint8_t>, float, float> *packet_trigger_{new Trigger<std::vector<uint8_t>, float, float>()};
   std::vector<uint8_t> sync_value_;
   InternalGPIOPin *dio0_pin_{nullptr};
