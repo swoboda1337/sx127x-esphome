@@ -42,6 +42,7 @@ class SX127x : public Component,
   void setup() override;
   void loop() override;
   void dump_config() override;
+  void set_auto_cal(bool auto_cal) { this->auto_cal_ = auto_cal; }
   void set_bandwidth(SX127xBw bandwidth) { this->bandwidth_ = bandwidth; }
   void set_bitrate(uint32_t bitrate) { this->bitrate_ = bitrate; }
   void set_bitsync(bool bitsync) { this->bitsync_ = bitsync; }
@@ -103,6 +104,7 @@ class SX127x : public Component,
   uint8_t shaping_;
   uint8_t spreading_factor_;
   float rx_floor_;
+  bool auto_cal_;
   bool bitsync_;
   bool crc_enable_;
   bool rx_start_;
