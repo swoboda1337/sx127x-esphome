@@ -34,6 +34,11 @@ enum SX127xBw : uint8_t {
   SX127X_BW_500_0,
 };
 
+class SX127xListener {
+ public:
+  virtual void on_packet(const std::vector<uint8_t> &packet, float rssi, float snr);
+};
+
 class SX127x : public Component,
                public spi::SPIDevice<spi::BIT_ORDER_MSB_FIRST, spi::CLOCK_POLARITY_LOW, spi::CLOCK_PHASE_LEADING,
                                      spi::DATA_RATE_8MHZ> {
@@ -74,6 +79,7 @@ class SX127x : public Component,
   void configure();
   void transmit_packet(const std::vector<uint8_t> &packet);
   Trigger<std::vector<uint8_t>, float, float> *get_packet_trigger() const { return this->packet_trigger_; };
+  void register_listener(SX127xListener *listener) { this->listeners_.push_back(listener); }
 
  protected:
   void configure_fsk_ook_();
@@ -83,6 +89,7 @@ class SX127x : public Component,
   void read_fifo_(std::vector<uint8_t> &packet);
   void write_register_(uint8_t reg, uint8_t value);
   uint8_t read_register_(uint8_t reg);
+  void on_packet_(const std::vector<uint8_t> &packet, float rssi, float snr);
   Trigger<std::vector<uint8_t>, float, float> *packet_trigger_{new Trigger<std::vector<uint8_t>, float, float>()};
   std::vector<uint8_t> sync_value_;
   InternalGPIOPin *dio0_pin_{nullptr};
@@ -108,6 +115,7 @@ class SX127x : public Component,
   bool bitsync_;
   bool crc_enable_;
   bool rx_start_;
+  std::vector<SX127xListener *> listeners_{};
 };
 
 }  // namespace sx127x
