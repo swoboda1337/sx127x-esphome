@@ -52,6 +52,16 @@ template<typename... Ts> class SetModeRxAction : public Action<Ts...> {
   SX127x *sx127x_;
 };
 
+template<typename... Ts> class SetModeSleepAction : public Action<Ts...> {
+ public:
+  SetModeSleepAction(SX127x *sx127x) : sx127x_(sx127x) {}
+
+  void play(Ts... x) override { this->sx127x_->set_mode_sleep(); }
+
+ protected:
+  SX127x *sx127x_;
+};
+
 template<typename... Ts> class SetModeStandbyAction : public Action<Ts...> {
  public:
   SetModeStandbyAction(SX127x *sx127x) : sx127x_(sx127x) {}

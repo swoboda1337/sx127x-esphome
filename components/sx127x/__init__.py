@@ -116,6 +116,7 @@ SendPacketAction = sx127x_ns.class_(
 )
 SetModeTxAction = sx127x_ns.class_("SetModeTxAction", automation.Action)
 SetModeRxAction = sx127x_ns.class_("SetModeRxAction", automation.Action)
+SetModeSleepAction = sx127x_ns.class_("SetModeSleepAction", automation.Action)
 SetModeStandbyAction = sx127x_ns.class_("SetModeStandbyAction", automation.Action)
 
 
@@ -282,6 +283,9 @@ SET_MODE_ACTION_SCHEMA = automation.maybe_simple_id(
 )
 @automation.register_action(
     "sx127x.set_mode_rx", SetModeRxAction, SET_MODE_ACTION_SCHEMA
+)
+@automation.register_action(
+    "sx127x.set_mode_sleep", SetModeSleepAction, SET_MODE_ACTION_SCHEMA
 )
 @automation.register_action(
     "sx127x.set_mode_standby", SetModeStandbyAction, SET_MODE_ACTION_SCHEMA
