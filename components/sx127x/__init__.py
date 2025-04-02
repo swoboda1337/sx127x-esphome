@@ -281,6 +281,7 @@ NO_ARGS_ACTION_SCHEMA = automation.maybe_simple_id(
     }
 )
 
+
 @automation.register_action(
     "sx127x.run_image_cal", RunImageCalAction, NO_ARGS_ACTION_SCHEMA
 )
