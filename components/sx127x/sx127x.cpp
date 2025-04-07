@@ -118,11 +118,11 @@ void SX127x::configure() {
     this->configure_lora_();
   }
 
-  // switch to rx or standby
+  // switch to rx or sleep
   if (this->rx_start_) {
     this->set_mode_rx();
   } else {
-    this->set_mode_standby();
+    this->set_mode_sleep();
   }
 }
 
@@ -266,7 +266,7 @@ void SX127x::transmit_packet(const std::vector<uint8_t> &packet) {
   if (this->rx_start_) {
     this->set_mode_rx();
   } else {
-    this->set_mode_standby();
+    this->set_mode_sleep();
   }
 }
 
