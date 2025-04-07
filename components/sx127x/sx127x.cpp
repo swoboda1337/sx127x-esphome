@@ -280,7 +280,9 @@ void SX127x::call_listeners_(const std::vector<uint8_t> &packet, float rssi, flo
 void SX127x::loop() {
   if (this->modulation_ == MOD_LORA) {
     if (this->dio0_pin_->digital_read()) {
-      if ((this->read_register_(REG_IRQ_FLAGS) & PAYLOAD_CRC_ERROR) == 0) {
+      uint8_t status = this->read_register_(REG_IRQ_FLAGS);
+      this->write_register_(REG_IRQ_FLAGS, 0xFF);
+      if ((status & PAYLOAD_CRC_ERROR) == 0) {
         uint8_t bytes = this->read_register_(REG_NB_RX_BYTES);
         uint8_t addr = this->read_register_(REG_FIFO_RX_CURR_ADDR);
         uint8_t rssi = this->read_register_(REG_PKT_RSSI_VALUE);
@@ -294,7 +296,6 @@ void SX127x::loop() {
           this->call_listeners_(packet, (float) rssi - 164, (float) snr / 4);
         }
       }
-      this->write_register_(REG_IRQ_FLAGS, 0xFF);
     }
   } else if (this->payload_length_ > 0 && this->dio0_pin_->digital_read()) {
     std::vector<uint8_t> packet(this->payload_length_);
