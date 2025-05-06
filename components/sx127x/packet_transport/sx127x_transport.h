@@ -16,8 +16,8 @@ class SX127xTransport : public packet_transport::PacketTransport, public Parente
 
  protected:
   void send_packet(std::vector<uint8_t> &buf) const override;
+  bool should_send() override { return true; }
   size_t get_max_packet_size() override { return this->parent_->get_max_packet_size(); }
-  bool should_send() { return true; }
 };
 
 }  // namespace sx127x
