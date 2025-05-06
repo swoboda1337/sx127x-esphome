@@ -234,12 +234,23 @@ void SX127x::configure_lora_() {
   }
 }
 
+size_t SX127x::get_max_packet_size() {
+  if (this->payload_length_ > 0) {
+    return this->payload_length_;
+  }
+  if (this->modulation_ == MOD_LORA) {
+    return 256;
+  } else {
+    return 64;
+  }
+}
+
 void SX127x::transmit_packet(const std::vector<uint8_t> &packet) {
   if (this->payload_length_ > 0 && this->payload_length_ != packet.size()) {
     ESP_LOGE(TAG, "Packet size does not match payload length");
     return;
   }
-  if (packet.empty() || packet.size() > 256) {
+  if (packet.empty() || packet.size() > this->get_max_packet_size()) {
     ESP_LOGE(TAG, "Packet size out of range");
     return;
   }

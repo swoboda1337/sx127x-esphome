@@ -8,6 +8,8 @@ MULTI_CONF = True
 CODEOWNERS = ["@swoboda1337"]
 DEPENDENCIES = ["spi"]
 
+CONF_SX127X_ID = "sx127x_id"
+
 CONF_AUTO_CAL = "auto_cal"
 CONF_BANDWIDTH = "bandwidth"
 CONF_BITRATE = "bitrate"
@@ -35,6 +37,7 @@ CONF_SYNC_VALUE = "sync_value"
 
 sx127x_ns = cg.esphome_ns.namespace("sx127x")
 SX127x = sx127x_ns.class_("SX127x", cg.Component, spi.SPIDevice)
+SX127xListener = sx127x_ns.class_("SX127xListener")
 SX127xBw = sx127x_ns.enum("SX127xBw")
 SX127xOpMode = sx127x_ns.enum("SX127xOpMode")
 SX127xPaConfig = sx127x_ns.enum("SX127xPaConfig")
