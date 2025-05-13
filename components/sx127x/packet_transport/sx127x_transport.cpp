@@ -8,6 +8,11 @@ namespace sx127x {
 
 static const char *const TAG = "sx127x_transport";
 
+void SX127xTransport::setup() {
+  PacketTransport::setup();
+  this->parent_->register_listener(this);
+}
+
 void SX127xTransport::update() {
   PacketTransport::update();
   this->updated_ = true;
