@@ -190,7 +190,7 @@ def validate_config(config):
     return config
 
 
-CONFIG_SCHEMA = cv.All(
+CONFIG_SCHEMA = (
     cv.Schema(
         {
             cv.GenerateID(): cv.declare_id(SX127x),
@@ -224,8 +224,8 @@ CONFIG_SCHEMA = cv.All(
         },
     )
     .extend(cv.COMPONENT_SCHEMA)
-    .extend(spi.spi_device_schema(True, 8e6, "mode0")),
-    validate_config,
+    .extend(spi.spi_device_schema(True, 8e6, "mode0"))
+    .add_extra(validate_config)
 )
 
 
