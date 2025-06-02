@@ -65,6 +65,7 @@ class SX127x : public Component,
   void set_pa_pin(uint8_t pin) { this->pa_pin_ = pin; }
   void set_pa_power(uint8_t power) { this->pa_power_ = power; }
   void set_pa_ramp(uint8_t ramp) { this->pa_ramp_ = ramp; }
+  void set_packet_mode(bool packet_mode) { this->packet_mode_ = packet_mode; }
   void set_payload_length(uint8_t payload_length) { this->payload_length_ = payload_length; }
   void set_preamble_errors(uint8_t preamble_errors) { this->preamble_errors_ = preamble_errors; }
   void set_preamble_polarity(uint8_t preamble_polarity) { this->preamble_polarity_ = preamble_polarity; }
@@ -116,6 +117,7 @@ class SX127x : public Component,
   bool auto_cal_;
   bool bitsync_;
   bool crc_enable_;
+  bool packet_mode_;
   bool rx_start_;
 };
 

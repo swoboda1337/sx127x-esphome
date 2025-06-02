@@ -23,6 +23,7 @@ CONF_ON_PACKET = "on_packet"
 CONF_PA_PIN = "pa_pin"
 CONF_PA_POWER = "pa_power"
 CONF_PA_RAMP = "pa_ramp"
+CONF_PACKET_MODE = "packet_mode"
 CONF_PAYLOAD_LENGTH = "payload_length"
 CONF_PREAMBLE_DETECT = "preamble_detect"
 CONF_PREAMBLE_ERRORS = "preamble_errors"
@@ -115,14 +116,24 @@ SHAPING = {
     "NONE": SX127xPaRamp.SHAPING_NONE,
 }
 
-RunImageCalAction = sx127x_ns.class_("RunImageCalAction", automation.Action)
+RunImageCalAction = sx127x_ns.class_(
+    "RunImageCalAction", automation.Action, cg.Parented.template(SX127x)
+)
 SendPacketAction = sx127x_ns.class_(
     "SendPacketAction", automation.Action, cg.Parented.template(SX127x)
 )
-SetModeTxAction = sx127x_ns.class_("SetModeTxAction", automation.Action)
-SetModeRxAction = sx127x_ns.class_("SetModeRxAction", automation.Action)
-SetModeSleepAction = sx127x_ns.class_("SetModeSleepAction", automation.Action)
-SetModeStandbyAction = sx127x_ns.class_("SetModeStandbyAction", automation.Action)
+SetModeTxAction = sx127x_ns.class_(
+    "SetModeTxAction", automation.Action, cg.Parented.template(SX127x)
+)
+SetModeRxAction = sx127x_ns.class_(
+    "SetModeRxAction", automation.Action, cg.Parented.template(SX127x)
+)
+SetModeSleepAction = sx127x_ns.class_(
+    "SetModeSleepAction", automation.Action, cg.Parented.template(SX127x)
+)
+SetModeStandbyAction = sx127x_ns.class_(
+    "SetModeStandbyAction", automation.Action, cg.Parented.template(SX127x)
+)
 
 
 def validate_raw_data(value):
@@ -174,6 +185,10 @@ def validate_config(config):
             raise cv.Invalid(
                 "Config preamble_errors is set but preamble_detect is not (previously preamble_size was used)"
             )
+        if CONF_PACKET_MODE not in config:
+            raise cv.Invalid(
+                "Must set packet_mode with FSK/OOK; add 'packet_mode: true/false'"
+            )
         if CONF_BITRATE not in config:
             if config[CONF_PAYLOAD_LENGTH] > 0:
                 raise cv.Invalid("Cannot use packet mode without setting bitrate")
@@ -208,6 +223,7 @@ CONFIG_SCHEMA = (
             cv.Optional(CONF_PA_PIN, default="BOOST"): cv.enum(PA_PIN),
             cv.Optional(CONF_PA_POWER, default=17): cv.int_range(min=0, max=17),
             cv.Optional(CONF_PA_RAMP, default="40us"): cv.enum(RAMP),
+            cv.Optional(CONF_PACKET_MODE): cv.boolean,
             cv.Optional(CONF_PAYLOAD_LENGTH, default=0): cv.int_range(min=0, max=256),
             cv.Optional(CONF_PREAMBLE_DETECT, default=0): cv.int_range(min=0, max=3),
             cv.Optional(CONF_PREAMBLE_ERRORS, default=0): cv.int_range(min=0, max=31),
@@ -265,6 +281,10 @@ async def to_code(config):
         cg.add(var.set_bitsync(config[CONF_BITSYNC]))
     else:
         cg.add(var.set_bitsync(False))
+    if CONF_PACKET_MODE in config:
+        cg.add(var.set_packet_mode(config[CONF_PACKET_MODE]))
+    else:
+        cg.add(var.set_packet_mode(False))
     cg.add(var.set_crc_enable(config[CONF_CRC_ENABLE]))
     cg.add(var.set_payload_length(config[CONF_PAYLOAD_LENGTH]))
     cg.add(var.set_preamble_detect(config[CONF_PREAMBLE_DETECT]))
@@ -301,8 +321,8 @@ NO_ARGS_ACTION_SCHEMA = automation.maybe_simple_id(
     "sx127x.set_mode_standby", SetModeStandbyAction, NO_ARGS_ACTION_SCHEMA
 )
 async def no_args_action_to_code(config, action_id, template_arg, args):
-    paren = await cg.get_variable(config[CONF_ID])
-    var = cg.new_Pvariable(action_id, template_arg, paren)
+    var = cg.new_Pvariable(action_id, template_arg)
+    await cg.register_parented(var, config[CONF_ID])
     return var
 
 

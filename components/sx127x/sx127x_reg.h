@@ -220,6 +220,8 @@ enum SX127xSyncConfig : uint8_t {
 };
 
 enum SX127xPacketConfig1 : uint8_t {
+  VARIABLE_LENGTH = 0x80,
+  FIXED_LENGTH = 0x00,
   CRC_ON = 0x10,
   CRC_OFF = 0x00,
 };
