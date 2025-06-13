@@ -48,7 +48,7 @@ void SX127x::write_fifo_(const std::vector<uint8_t> &packet) {
 }
 
 void SX127x::setup() {
-  ESP_LOGCONFIG(TAG, "Setting up SX127x...");
+  ESP_LOGCONFIG(TAG, "Running setup");
 
   // setup reset
   this->rst_pin_->setup();
@@ -252,7 +252,7 @@ size_t SX127x::get_max_packet_size() {
 
 void SX127x::transmit_packet(const std::vector<uint8_t> &packet) {
   if (this->payload_length_ > 0 && this->payload_length_ != packet.size()) {
-    ESP_LOGE(TAG, "Packet size does not match payload length");
+    ESP_LOGE(TAG, "Packet size does not match config");
     return;
   }
   if (packet.empty() || packet.size() > this->get_max_packet_size()) {
@@ -333,7 +333,7 @@ void SX127x::run_image_cal() {
   uint32_t start = millis();
   uint8_t mode = this->read_register_(REG_OP_MODE);
   if ((mode & MODE_MASK) != MODE_STDBY) {
-    ESP_LOGE(TAG, "Radio needs to be in standby mode for image cal");
+    ESP_LOGE(TAG, "Need to be in standby for image cal");
     return;
   }
   if (mode & MOD_LORA) {

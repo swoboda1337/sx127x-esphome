@@ -1,6 +1,5 @@
 #include "esphome/core/log.h"
 #include "esphome/core/application.h"
-#include "esphome/components/network/util.h"
 #include "sx127x_transport.h"
 
 namespace esphome {
