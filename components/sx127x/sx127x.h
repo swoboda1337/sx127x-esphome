@@ -36,7 +36,7 @@ enum SX127xBw : uint8_t {
 
 class SX127xListener {
  public:
-  virtual void on_packet(const std::vector<uint8_t> &packet, float rssi, float snr);
+  virtual void on_packet(const std::vector<uint8_t> &packet, float rssi, float snr) = 0;
 };
 
 class SX127x : public Component,
