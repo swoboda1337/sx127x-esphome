@@ -17,6 +17,8 @@ static const uint8_t BW_FSK_OOK[22] = {RX_BW_2_6,   RX_BW_3_1,   RX_BW_3_9,   RX
                                        RX_BW_10_4,  RX_BW_12_5,  RX_BW_15_6,  RX_BW_20_8, RX_BW_25_0,  RX_BW_31_3,
                                        RX_BW_41_7,  RX_BW_50_0,  RX_BW_62_5,  RX_BW_83_3, RX_BW_100_0, RX_BW_125_0,
                                        RX_BW_166_7, RX_BW_200_0, RX_BW_250_0, RX_BW_250_0};
+static const int32_t RSSI_OFFSET_HF = 157;
+static const int32_t RSSI_OFFSET_LF = 164;
 
 uint8_t SX127x::read_register_(uint8_t reg) {
   this->enable();
@@ -250,15 +252,17 @@ size_t SX127x::get_max_packet_size() {
   }
 }
 
-void SX127x::transmit_packet(const std::vector<uint8_t> &packet) {
+SX127xError SX127x::transmit_packet(const std::vector<uint8_t> &packet) {
   if (this->payload_length_ > 0 && this->payload_length_ != packet.size()) {
     ESP_LOGE(TAG, "Packet size does not match config");
-    return;
+    return SX127xError::INVALID_PARAMS;
   }
   if (packet.empty() || packet.size() > this->get_max_packet_size()) {
     ESP_LOGE(TAG, "Packet size out of range");
-    return;
+    return SX127xError::INVALID_PARAMS;
   }
+
+  SX127xError ret = SX127xError::NONE;
   if (this->modulation_ == MOD_LORA) {
     this->set_mode_standby();
     if (this->payload_length_ == 0) {
@@ -276,10 +280,13 @@ void SX127x::transmit_packet(const std::vector<uint8_t> &packet) {
     this->write_fifo_(packet);
     this->set_mode_tx();
   }
+
+  // wait until transmit completes, typically the delay will be less than 100 ms
   uint32_t start = millis();
   while (!this->dio0_pin_->digital_read()) {
     if (millis() - start > 4000) {
       ESP_LOGE(TAG, "Transmit packet failure");
+      ret = SX127xError::TIMEOUT;
       break;
     }
   }
@@ -288,6 +295,7 @@ void SX127x::transmit_packet(const std::vector<uint8_t> &packet) {
   } else {
     this->set_mode_sleep();
   }
+  return ret;
 }
 
 void SX127x::call_listeners_(const std::vector<uint8_t> &packet, float rssi, float snr) {
@@ -298,45 +306,40 @@ void SX127x::call_listeners_(const std::vector<uint8_t> &packet, float rssi, flo
 }
 
 void SX127x::loop() {
+  if (this->dio0_pin_ == nullptr || !this->dio0_pin_->digital_read()) {
+    return;
+  }
+
   if (this->modulation_ == MOD_LORA) {
-    if (this->dio0_pin_->digital_read()) {
-      uint8_t status = this->read_register_(REG_IRQ_FLAGS);
-      this->write_register_(REG_IRQ_FLAGS, 0xFF);
-      if ((status & PAYLOAD_CRC_ERROR) == 0) {
-        uint8_t bytes = this->read_register_(REG_NB_RX_BYTES);
-        uint8_t addr = this->read_register_(REG_FIFO_RX_CURR_ADDR);
-        uint8_t rssi = this->read_register_(REG_PKT_RSSI_VALUE);
-        int8_t snr = (int8_t) this->read_register_(REG_PKT_SNR_VALUE);
-        std::vector<uint8_t> packet(bytes);
-        this->write_register_(REG_FIFO_ADDR_PTR, addr);
-        this->read_fifo_(packet);
-        if (this->frequency_ > 700000000) {
-          this->call_listeners_(packet, (float) rssi - 157, (float) snr / 4);
-        } else {
-          this->call_listeners_(packet, (float) rssi - 164, (float) snr / 4);
-        }
+    uint8_t status = this->read_register_(REG_IRQ_FLAGS);
+    this->write_register_(REG_IRQ_FLAGS, 0xFF);
+    if ((status & PAYLOAD_CRC_ERROR) == 0) {
+      uint8_t bytes = this->read_register_(REG_NB_RX_BYTES);
+      uint8_t addr = this->read_register_(REG_FIFO_RX_CURR_ADDR);
+      uint8_t rssi = this->read_register_(REG_PKT_RSSI_VALUE);
+      int8_t snr = (int8_t) this->read_register_(REG_PKT_SNR_VALUE);
+      this->packet_.resize(bytes);
+      this->write_register_(REG_FIFO_ADDR_PTR, addr);
+      this->read_fifo_(this->packet_);
+      if (this->frequency_ > 700000000) {
+        this->call_listeners_(this->packet_, (float) rssi - RSSI_OFFSET_HF, (float) snr / 4);
+      } else {
+        this->call_listeners_(this->packet_, (float) rssi - RSSI_OFFSET_LF, (float) snr / 4);
       }
     }
-  } else if (this->packet_mode_ && this->dio0_pin_->digital_read()) {
-    std::vector<uint8_t> packet;
+  } else if (this->packet_mode_) {
     uint8_t payload_length = this->payload_length_;
     if (payload_length == 0) {
       payload_length = this->read_register_(REG_FIFO);
     }
-    packet.resize(payload_length);
-    this->read_fifo_(packet);
-    this->call_listeners_(packet, 0.0f, 0.0f);
+    this->packet_.resize(payload_length);
+    this->read_fifo_(this->packet_);
+    this->call_listeners_(this->packet_, 0.0f, 0.0f);
   }
 }
 
 void SX127x::run_image_cal() {
-  uint32_t start = millis();
-  uint8_t mode = this->read_register_(REG_OP_MODE);
-  if ((mode & MODE_MASK) != MODE_STDBY) {
-    ESP_LOGE(TAG, "Need to be in standby for image cal");
-    return;
-  }
-  if (mode & MOD_LORA) {
+  if (this->modulation_ == MOD_LORA) {
     this->set_mode_(MOD_FSK, MODE_SLEEP);
     this->set_mode_(MOD_FSK, MODE_STDBY);
   }
@@ -345,13 +348,15 @@ void SX127x::run_image_cal() {
   } else {
     this->write_register_(REG_IMAGE_CAL, IMAGE_CAL_START);
   }
+  uint32_t start = millis();
   while (this->read_register_(REG_IMAGE_CAL) & IMAGE_CAL_RUNNING) {
     if (millis() - start > 20) {
       ESP_LOGE(TAG, "Image cal failure");
+      this->mark_failed();
       break;
     }
   }
-  if (mode & MOD_LORA) {
+  if (this->modulation_ == MOD_LORA) {
     this->set_mode_(this->modulation_, MODE_SLEEP);
     this->set_mode_(this->modulation_, MODE_STDBY);
   }
@@ -370,6 +375,7 @@ void SX127x::set_mode_(uint8_t modulation, uint8_t mode) {
     }
     if (millis() - start > 20) {
       ESP_LOGE(TAG, "Set mode failure");
+      this->mark_failed();
       break;
     }
   }
@@ -400,74 +406,88 @@ void SX127x::dump_config() {
   LOG_PIN("  CS Pin: ", this->cs_);
   LOG_PIN("  RST Pin: ", this->rst_pin_);
   LOG_PIN("  DIO0 Pin: ", this->dio0_pin_);
-  ESP_LOGCONFIG(TAG, "  Auto Cal: %s", TRUEFALSE(this->auto_cal_));
-  ESP_LOGCONFIG(TAG, "  Frequency: %" PRIu32 " Hz", this->frequency_);
-  ESP_LOGCONFIG(TAG, "  Bandwidth: %" PRIu32 " Hz", BW_HZ[this->bandwidth_]);
-  ESP_LOGCONFIG(TAG, "  PA Pin: %s", this->pa_pin_ == PA_PIN_BOOST ? "BOOST" : "RFO");
-  ESP_LOGCONFIG(TAG, "  PA Power: %" PRIu8 " dBm", this->pa_power_);
-  ESP_LOGCONFIG(TAG, "  PA Ramp: %" PRIu16 " us", RAMP[this->pa_ramp_]);
-  if (this->shaping_ == CUTOFF_BR_X_2) {
-    ESP_LOGCONFIG(TAG, "  Shaping: CUTOFF_BR_X_2");
-  } else if (this->shaping_ == CUTOFF_BR_X_1) {
-    ESP_LOGCONFIG(TAG, "  Shaping: CUTOFF_BR_X_1");
-  } else if (this->shaping_ == GAUSSIAN_BT_0_3) {
-    ESP_LOGCONFIG(TAG, "  Shaping: GAUSSIAN_BT_0_3");
-  } else if (this->shaping_ == GAUSSIAN_BT_0_5) {
-    ESP_LOGCONFIG(TAG, "  Shaping: GAUSSIAN_BT_0_5");
-  } else if (this->shaping_ == GAUSSIAN_BT_1_0) {
-    ESP_LOGCONFIG(TAG, "  Shaping: GAUSSIAN_BT_1_0");
-  } else {
-    ESP_LOGCONFIG(TAG, "  Shaping: NONE");
+  const char *pa_pin = "RFO";
+  if (this->pa_pin_ == PA_PIN_BOOST) {
+    pa_pin = "BOOST";
   }
+  ESP_LOGCONFIG(TAG,
+                "  Auto Cal: %s\n"
+                "  Frequency: %" PRIu32 " Hz\n"
+                "  Bandwidth: %" PRIu32 " Hz\n"
+                "  PA Pin: %s\n"
+                "  PA Power: %" PRIu8 " dBm\n"
+                "  PA Ramp: %" PRIu16 " us",
+                TRUEFALSE(this->auto_cal_), this->frequency_, BW_HZ[this->bandwidth_], pa_pin, this->pa_power_,
+                RAMP[this->pa_ramp_]);
   if (this->modulation_ == MOD_FSK) {
     ESP_LOGCONFIG(TAG, "  Deviation: %" PRIu32 " Hz", this->deviation_);
   }
   if (this->modulation_ == MOD_LORA) {
-    ESP_LOGCONFIG(TAG, "  Modulation: %s", "LORA");
-    ESP_LOGCONFIG(TAG, "  Spreading Factor: %" PRIu8, this->spreading_factor_);
+    const char *cr = "4/8";
     if (this->coding_rate_ == CODING_RATE_4_5) {
-      ESP_LOGCONFIG(TAG, "  Coding Rate: 4/5");
+      cr = "4/5";
     } else if (this->coding_rate_ == CODING_RATE_4_6) {
-      ESP_LOGCONFIG(TAG, "  Coding Rate: 4/6");
+      cr = "4/6";
     } else if (this->coding_rate_ == CODING_RATE_4_7) {
-      ESP_LOGCONFIG(TAG, "  Coding Rate: 4/7");
-    } else {
-      ESP_LOGCONFIG(TAG, "  Coding Rate: 4/8");
+      cr = "4/7";
+    }
+    ESP_LOGCONFIG(TAG,
+                  "  Modulation: LORA\n"
+                  "  Preamble Size: %" PRIu16 "\n"
+                  "  Spreading Factor: %" PRIu8 "\n"
+                  "  Coding Rate: %s\n"
+                  "  CRC Enable: %s",
+                  this->preamble_size_, this->spreading_factor_, cr, TRUEFALSE(this->crc_enable_));
+    if (this->payload_length_ > 0) {
+      ESP_LOGCONFIG(TAG, "  Payload Length: %" PRIu32, this->payload_length_);
     }
     if (!this->sync_value_.empty()) {
       ESP_LOGCONFIG(TAG, "  Sync Value: 0x%02x", this->sync_value_[0]);
     }
-    if (this->preamble_size_ > 0) {
-      ESP_LOGCONFIG(TAG, "  Preamble Size: %" PRIu16, this->preamble_size_);
-    }
   } else {
-    ESP_LOGCONFIG(TAG, "  Modulation: %s", this->modulation_ == MOD_FSK ? "FSK" : "OOK");
-    ESP_LOGCONFIG(TAG, "  Bitrate: %" PRIu32 "b/s", this->bitrate_);
-    ESP_LOGCONFIG(TAG, "  Bitsync: %s", TRUEFALSE(this->bitsync_));
-    ESP_LOGCONFIG(TAG, "  Rx Start: %s", TRUEFALSE(this->rx_start_));
-    ESP_LOGCONFIG(TAG, "  Rx Floor: %.1f dBm", this->rx_floor_);
-    if (this->preamble_size_ > 0) {
-      ESP_LOGCONFIG(TAG, "  Preamble Size: %" PRIu16, this->preamble_size_);
+    const char *shaping = "NONE";
+    if (this->modulation_ == MOD_FSK) {
+      if (this->shaping_ == GAUSSIAN_BT_0_3) {
+        shaping = "GAUSSIAN_BT_0_3";
+      } else if (this->shaping_ == GAUSSIAN_BT_0_5) {
+        shaping = "GAUSSIAN_BT_0_5";
+      } else if (this->shaping_ == GAUSSIAN_BT_1_0) {
+        shaping = "GAUSSIAN_BT_1_0";
+      }
+    } else {
+      if (this->shaping_ == CUTOFF_BR_X_2) {
+        shaping = "CUTOFF_BR_X_2";
+      } else if (this->shaping_ == CUTOFF_BR_X_1) {
+        shaping = "CUTOFF_BR_X_1";
+      }
     }
-    if (this->preamble_detect_ > 0) {
-      ESP_LOGCONFIG(TAG, "  Preamble Detect: %" PRIu8, this->preamble_detect_);
-      ESP_LOGCONFIG(TAG, "  Preamble Errors: %" PRIu8, this->preamble_errors_);
+    ESP_LOGCONFIG(TAG,
+                  "  Shaping: %s\n"
+                  "  Modulation: %s\n"
+                  "  Bitrate: %" PRIu32 "b/s\n"
+                  "  Bitsync: %s\n"
+                  "  Rx Start: %s\n"
+                  "  Rx Floor: %.1f dBm\n"
+                  "  Packet Mode: %s",
+                  shaping, this->modulation_ == MOD_FSK ? "FSK" : "OOK", this->bitrate_, TRUEFALSE(this->bitsync_),
+                  TRUEFALSE(this->rx_start_), this->rx_floor_, TRUEFALSE(this->packet_mode_));
+    if (this->packet_mode_) {
+      ESP_LOGCONFIG(TAG, "  CRC Enable: %s", TRUEFALSE(this->crc_enable_));
     }
-    if (this->preamble_size_ > 0 || this->preamble_detect_ > 0) {
-      ESP_LOGCONFIG(TAG, "  Preamble Polarity: 0x%X", this->preamble_polarity_);
+    if (this->payload_length_ > 0) {
+      ESP_LOGCONFIG(TAG, "  Payload Length: %" PRIu32, this->payload_length_);
     }
     if (!this->sync_value_.empty()) {
       ESP_LOGCONFIG(TAG, "  Sync Value: 0x%s", format_hex(this->sync_value_).c_str());
     }
-  }
-  if (this->modulation_ != MOD_LORA) {
-    ESP_LOGCONFIG(TAG, "  Packet Mode: %s", TRUEFALSE(this->packet_mode_));
-  }
-  if (this->payload_length_ > 0) {
-    ESP_LOGCONFIG(TAG, "  Payload Length: %" PRIu32, this->payload_length_);
-  }
-  if (this->packet_mode_ || this->modulation_ == MOD_LORA) {
-    ESP_LOGCONFIG(TAG, "  CRC Enable: %s", TRUEFALSE(this->crc_enable_));
+    if (this->preamble_size_ > 0 || this->preamble_detect_ > 0) {
+      ESP_LOGCONFIG(TAG,
+                    "  Preamble Polarity: 0x%X\n"
+                    "  Preamble Size: %" PRIu16 "\n"
+                    "  Preamble Detect: %" PRIu8 "\n"
+                    "  Preamble Errors: %" PRIu8,
+                    this->preamble_polarity_, this->preamble_size_, this->preamble_detect_, this->preamble_errors_);
+    }
   }
   if (this->is_failed()) {
     ESP_LOGE(TAG, "Configuring SX127x failed");

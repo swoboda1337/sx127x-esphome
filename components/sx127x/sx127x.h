@@ -34,6 +34,8 @@ enum SX127xBw : uint8_t {
   SX127X_BW_500_0,
 };
 
+enum class SX127xError { NONE = 0, TIMEOUT, INVALID_PARAMS };
+
 class SX127xListener {
  public:
   virtual void on_packet(const std::vector<uint8_t> &packet, float rssi, float snr) = 0;
@@ -79,7 +81,7 @@ class SX127x : public Component,
   void set_sync_value(const std::vector<uint8_t> &sync_value) { this->sync_value_ = sync_value; }
   void run_image_cal();
   void configure();
-  void transmit_packet(const std::vector<uint8_t> &packet);
+  SX127xError transmit_packet(const std::vector<uint8_t> &packet);
   void register_listener(SX127xListener *listener) { this->listeners_.push_back(listener); }
   Trigger<std::vector<uint8_t>, float, float> *get_packet_trigger() const { return this->packet_trigger_; };
 
@@ -94,6 +96,7 @@ class SX127x : public Component,
   uint8_t read_register_(uint8_t reg);
   Trigger<std::vector<uint8_t>, float, float> *packet_trigger_{new Trigger<std::vector<uint8_t>, float, float>()};
   std::vector<SX127xListener *> listeners_;
+  std::vector<uint8_t> packet_;
   std::vector<uint8_t> sync_value_;
   InternalGPIOPin *dio0_pin_{nullptr};
   InternalGPIOPin *rst_pin_{nullptr};
@@ -114,11 +117,11 @@ class SX127x : public Component,
   uint8_t shaping_;
   uint8_t spreading_factor_;
   float rx_floor_;
-  bool auto_cal_;
-  bool bitsync_;
-  bool crc_enable_;
-  bool packet_mode_;
-  bool rx_start_;
+  bool auto_cal_{false};
+  bool bitsync_{false};
+  bool crc_enable_{false};
+  bool packet_mode_{false};
+  bool rx_start_{false};
 };
 
 }  // namespace sx127x

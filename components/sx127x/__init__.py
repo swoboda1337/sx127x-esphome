@@ -139,8 +139,6 @@ SetModeStandbyAction = sx127x_ns.class_(
 def validate_raw_data(value):
     if isinstance(value, str):
         return value.encode("utf-8")
-    if isinstance(value, str):
-        return value
     if isinstance(value, list):
         return cv.Schema([cv.hex_uint8_t])(value)
     raise cv.Invalid(
@@ -163,41 +161,24 @@ def validate_config(config):
             "500_0kHz",
         ]
         if config[CONF_BANDWIDTH] not in bws:
-            raise cv.Invalid(
-                f"Bandwidth {config[CONF_BANDWIDTH]} is not available with LORA"
-            )
+            raise cv.Invalid(f"{config[CONF_BANDWIDTH]} is not available with LORA")
         if CONF_DIO0_PIN not in config:
             raise cv.Invalid("Cannot use LoRa without dio0_pin")
-        if config[CONF_PREAMBLE_SIZE] > 0 and config[CONF_PREAMBLE_SIZE] < 6:
+        if 0 < config[CONF_PREAMBLE_SIZE] < 6:
             raise cv.Invalid("Minimum preamble size is 6 with LORA")
         if config[CONF_SPREADING_FACTOR] == 6 and config[CONF_PAYLOAD_LENGTH] == 0:
             raise cv.Invalid("Payload length must be set when spreading factor is 6")
     else:
         if config[CONF_BANDWIDTH] == "500_0kHz":
-            raise cv.Invalid(
-                f"Bandwidth {config[CONF_BANDWIDTH]} is only available with LORA"
-            )
-        if config[CONF_PAYLOAD_LENGTH] > 64:
-            raise cv.Invalid("Payload length must be >= 64 with FSK/OOK")
-        if config[CONF_PAYLOAD_LENGTH] > 0 and CONF_DIO0_PIN not in config:
-            raise cv.Invalid("Cannot use packet mode without dio0_pin")
-        if config[CONF_PREAMBLE_ERRORS] > 0 and config[CONF_PREAMBLE_DETECT] == 0:
-            raise cv.Invalid(
-                "Config preamble_errors is set but preamble_detect is not (previously preamble_size was used)"
-            )
+            raise cv.Invalid(f"{config[CONF_BANDWIDTH]} is only available with LORA")
+        if CONF_BITSYNC not in config:
+            raise cv.Invalid("Config 'bitsync' required with FSK/OOK")
         if CONF_PACKET_MODE not in config:
-            raise cv.Invalid(
-                "Must set packet_mode with FSK/OOK; add 'packet_mode: true/false'"
-            )
-        if CONF_BITRATE not in config:
-            if config[CONF_PAYLOAD_LENGTH] > 0:
-                raise cv.Invalid("Cannot use packet mode without setting bitrate")
-            if CONF_BITSYNC in config and config[CONF_BITSYNC]:
-                raise cv.Invalid("Bitsync is true but bitrate is not configured")
-        elif CONF_BITSYNC not in config:
-            raise cv.Invalid(
-                "Bitrate is configured but not bitsync; add 'bitsync: true'"
-            )
+            raise cv.Invalid("Config 'packet_mode' required with FSK/OOK")
+        if config[CONF_PACKET_MODE] and CONF_DIO0_PIN not in config:
+            raise cv.Invalid("Config 'dio0_pin' required in packet mode")
+        if config[CONF_PAYLOAD_LENGTH] > 64:
+            raise cv.Invalid("Payload length must be <= 64 with FSK/OOK")
     if config[CONF_PA_PIN] == "RFO" and config[CONF_PA_POWER] > 15:
         raise cv.Invalid("PA power must be <= 15 dbm when using the RFO pin")
     if config[CONF_PA_PIN] == "BOOST" and config[CONF_PA_POWER] < 2:
@@ -211,7 +192,7 @@ CONFIG_SCHEMA = (
             cv.GenerateID(): cv.declare_id(SX127x),
             cv.Optional(CONF_AUTO_CAL, default=True): cv.boolean,
             cv.Optional(CONF_BANDWIDTH, default="125_0kHz"): cv.enum(BW),
-            cv.Optional(CONF_BITRATE): cv.int_range(min=500, max=300000),
+            cv.Optional(CONF_BITRATE, default=4800): cv.int_range(min=500, max=300000),
             cv.Optional(CONF_BITSYNC): cv.boolean,
             cv.Optional(CONF_CODING_RATE, default="CR_4_5"): cv.enum(CODING_RATE),
             cv.Optional(CONF_CRC_ENABLE, default=False): cv.boolean,
@@ -269,22 +250,14 @@ async def to_code(config):
     cg.add(var.set_frequency(config[CONF_FREQUENCY]))
     cg.add(var.set_deviation(config[CONF_DEVIATION]))
     cg.add(var.set_modulation(config[CONF_MODULATION]))
+    if config[CONF_MODULATION] != "LORA":
+        cg.add(var.set_bitrate(config[CONF_BITRATE]))
+        cg.add(var.set_bitsync(config[CONF_BITSYNC]))
+        cg.add(var.set_packet_mode(config[CONF_PACKET_MODE]))
     cg.add(var.set_pa_pin(config[CONF_PA_PIN]))
     cg.add(var.set_pa_ramp(config[CONF_PA_RAMP]))
     cg.add(var.set_pa_power(config[CONF_PA_POWER]))
     cg.add(var.set_shaping(config[CONF_SHAPING]))
-    if CONF_BITRATE in config:
-        cg.add(var.set_bitrate(config[CONF_BITRATE]))
-    else:
-        cg.add(var.set_bitrate(4800))
-    if CONF_BITSYNC in config:
-        cg.add(var.set_bitsync(config[CONF_BITSYNC]))
-    else:
-        cg.add(var.set_bitsync(False))
-    if CONF_PACKET_MODE in config:
-        cg.add(var.set_packet_mode(config[CONF_PACKET_MODE]))
-    else:
-        cg.add(var.set_packet_mode(False))
     cg.add(var.set_crc_enable(config[CONF_CRC_ENABLE]))
     cg.add(var.set_payload_length(config[CONF_PAYLOAD_LENGTH]))
     cg.add(var.set_preamble_detect(config[CONF_PREAMBLE_DETECT]))
